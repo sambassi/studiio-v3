@@ -43,7 +43,7 @@ export default function LoginPage() {
         <div className="card-base p-8 space-y-6">
           <div className="text-center">
             <h1 className="text-3xl font-bold text-white mb-2">Connexion</h1>
-            <p className="text-gray-400">Connectez-vous \u00e0 votre compte Studiio</p>
+            <p className="text-gray-400">Connectez-vous à votre compte Studiio</p>
           </div>
 
           <div className="space-y-3">
@@ -95,7 +95,7 @@ export default function LoginPage() {
               <input
                 type="password"
                 className="input-base w-full"
-                placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -112,7 +112,7 @@ export default function LoginPage() {
 
           <div className="text-center">
             <Link href="/auth/forgot-password" className="text-sm text-studiio-primary hover:text-purple-400">
-              Mot de passe oubli\u00e9 ?
+              Mot de passe oublié ?
             </Link>
           </div>
 

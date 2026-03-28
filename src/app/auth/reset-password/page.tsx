@@ -17,7 +17,7 @@ function ResetPasswordForm() {
 
   useEffect(() => {
     if (!token) {
-      setError('Lien de r\u00e9initialisation invalide ou expir\u00e9.');
+      setError('Lien de réinitialisation invalide ou expiré.');
     }
   }, [token]);
 
@@ -26,7 +26,7 @@ function ResetPasswordForm() {
     setError('');
 
     if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caract\u00e8res');
+      setError('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
@@ -74,8 +74,8 @@ function ResetPasswordForm() {
 
           {success ? (
             <div className="bg-green-900/50 border border-green-500 text-green-300 px-4 py-4 rounded-lg text-sm text-center space-y-2">
-              <p className="font-semibold">Mot de passe modifi&eacute; !</p>
-              <p>Votre mot de passe a &eacute;t&eacute; r&eacute;initialis&eacute; avec succ&egrave;s.</p>
+              <p className="font-semibold">Mot de passe modifié !</p>
+              <p>Votre mot de passe a été réinitialisé avec succès.</p>
             </div>
           ) : (
             <>
@@ -92,7 +92,7 @@ function ResetPasswordForm() {
                     <input
                       type="password"
                       className="input-base w-full"
-                      placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                      placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
@@ -104,7 +104,7 @@ function ResetPasswordForm() {
                     <input
                       type="password"
                       className="input-base w-full"
-                      placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
+                      placeholder="••••••••"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       required
@@ -116,7 +116,7 @@ function ResetPasswordForm() {
                     disabled={loading}
                     className="w-full button-primary disabled:opacity-50"
                   >
-                    {loading ? 'Modification...' : 'R\u00e9initialiser le mot de passe'}
+                    {loading ? 'Modification...' : 'Réinitialiser le mot de passe'}
                   </button>
                 </form>
               )}
@@ -125,7 +125,7 @@ function ResetPasswordForm() {
 
           <div className="text-center">
             <Link href="/auth/login" className="text-studiio-primary hover:text-purple-400 font-semibold text-sm">
-              &larr; Retour &agrave; la connexion
+              ← Retour à la connexion
             </Link>
           </div>
         </div>

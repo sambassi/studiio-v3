@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     if (password.length < 6) {
       return NextResponse.json(
-        { success: false, error: 'Le mot de passe doit contenir au moins 6 caract\u00e8res' },
+        { success: false, error: 'Le mot de passe doit contenir au moins 6 caractères' },
         { status: 400 }
       );
     }
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     if (resetError || !resetData) {
       return NextResponse.json(
-        { success: false, error: 'Lien de r\u00e9initialisation invalide ou expir\u00e9' },
+        { success: false, error: 'Lien de réinitialisation invalide ou expiré' },
         { status: 400 }
       );
     }
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         .eq('id', resetData.id);
 
       return NextResponse.json(
-        { success: false, error: 'Le lien de r\u00e9initialisation a expir\u00e9. Veuillez en demander un nouveau.' },
+        { success: false, error: 'Le lien de réinitialisation a expiré. Veuillez en demander un nouveau.' },
         { status: 400 }
       );
     }
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
     if (updateError) {
       console.error('Error updating password:', updateError);
       return NextResponse.json(
-        { success: false, error: 'Erreur lors de la mise \u00e0 jour du mot de passe' },
+        { success: false, error: 'Erreur lors de la mise à jour du mot de passe' },
         { status: 500 }
       );
     }

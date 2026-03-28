@@ -44,18 +44,18 @@ export default function ForgotPasswordPage() {
             <div className="mx-auto w-16 h-16 bg-gray-800 rounded-full flex items-center justify-center mb-4">
               <Mail size={28} className="text-studiio-primary" />
             </div>
-            <h1 className="text-3xl font-bold text-white mb-2">Mot de passe oubli&eacute; ?</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Mot de passe oublié ?</h1>
             <p className="text-gray-400">
-              Entrez votre adresse e-mail et nous vous enverrons un lien pour r&eacute;initialiser votre mot de passe.
+              Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.
             </p>
           </div>
 
           {success ? (
             <div className="bg-green-900/50 border border-green-500 text-green-300 px-4 py-4 rounded-lg text-sm text-center space-y-2">
-              <p className="font-semibold">E-mail envoy&eacute; !</p>
+              <p className="font-semibold">E-mail envoyé !</p>
               <p>
-                Si un compte existe avec cette adresse e-mail, vous recevrez un lien de r&eacute;initialisation.
-                V&eacute;rifiez votre bo&icirc;te de r&eacute;ception et vos spams.
+                Si un compte existe avec cette adresse e-mail, vous recevrez un lien de réinitialisation.
+                Vérifiez votre boîte de réception et vos spams.
               </p>
             </div>
           ) : (
@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
                   disabled={loading}
                   className="w-full button-primary disabled:opacity-50"
                 >
-                  {loading ? 'Envoi en cours...' : 'Envoyer le lien de r\u00e9initialisation'}
+                  {loading ? 'Envoi en cours...' : 'Envoyer le lien de réinitialisation'}
                 </button>
               </form>
             </>
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
 
           <div className="text-center">
             <Link href="/auth/login" className="text-studiio-primary hover:text-purple-400 font-semibold text-sm">
-              &larr; Retour &agrave; la connexion
+              ← Retour à la connexion
             </Link>
           </div>
         </div>
