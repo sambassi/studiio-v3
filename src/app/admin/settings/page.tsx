@@ -64,8 +64,8 @@ export default function SettingsPage() {
               className="w-4 h-4"
             />
             <div>
-              <p className="font-medium text-white text-sm">Autoriser el les nouvelles inscriptions</p>
-              <p className="text-xs text-gray-400">Permettre aux nouveaux utilisateurs de sinscrire</p>
+              <p className="font-medium text-white text-sm">Autoriser les nouvelles inscriptions</p>
+              <p className="text-xs text-gray-400">Permettre aux nouveaux utilisateurs de s'inscrire</p>
             </div>
           </label>
           <label className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-lg cursor-pointer hover:bg-gray-800 transition">
@@ -128,6 +128,5 @@ export default function SettingsPage() {
         </CardFooter>
       </Card>
     </div>
-  
- "»
+  );
 }
