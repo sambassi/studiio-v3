@@ -23,6 +23,7 @@ export default function ObjectivesPage() {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '', description: '', target_audience: '', platform: '', tone: ''
   });
@@ -74,15 +75,13 @@ export default function ObjectivesPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer l'objectif "${name}" ?`)) {
-      return;
-    }
+  const handleDelete = async (id: string) => {
     try {
       const res = await fetch(`/api/user/objectives?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
       if (data.success) {
         setObjectives(prev => prev.filter(o => o.id !== id));
+        setDeleteConfirm(null);
       }
     } catch (error) {
       console.error('Error deleting objective:', error);
@@ -230,9 +229,20 @@ export default function ObjectivesPage() {
                     <Button size="sm" variant="secondary" onClick={() => handleEdit(objective)}>
                       <Edit2 size={16} />
                     </Button>
-                    <Button size="sm" variant="secondary" onClick={() => handleDelete(objective.id, objective.name)}>
-                      <Trash2 size={16} />
-                    </Button>
+                    {deleteConfirm === objective.id ? (
+                      <div className="flex gap-1">
+                        <Button size="sm" variant="primary" onClick={() => handleDelete(objective.id)} className="bg-red-600 hover:bg-red-700 text-xs">
+                          Oui
+                        </Button>
+                        <Button size="sm" variant="secondary" onClick={() => setDeleteConfirm(null)} className="text-xs">
+                          Non
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button size="sm" variant="secondary" onClick={() => setDeleteConfirm(objective.id)}>
+                        <Trash2 size={16} />
+                      </Button>
+                    )}
                   </div>
                 </div>
               </CardContent>

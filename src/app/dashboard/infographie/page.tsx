@@ -50,6 +50,7 @@ export default function InfographiePage() {
   const [logo, setLogo] = useState<File | null>(null);
   const [duration, setDuration] = useState(30);
   const [rendering, setRendering] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const mixVideoInputRef = useRef<HTMLInputElement>(null);
   const musicInputRef = useRef<HTMLInputElement>(null);
@@ -118,13 +119,16 @@ export default function InfographiePage() {
       });
 
       if (response.ok) {
-        alert('Vidéo en cours de rendu!');
+        setToastMsg('Vidéo en cours de rendu!');
+        setTimeout(() => setToastMsg(null), 4000);
       } else {
-        alert('Erreur lors du rendu');
+        setToastMsg('Erreur lors du rendu');
+        setTimeout(() => setToastMsg(null), 4000);
       }
     } catch (error) {
       console.error(error);
-      alert('Erreur lors du rendu');
+      setToastMsg('Erreur lors du rendu');
+      setTimeout(() => setToastMsg(null), 4000);
     } finally {
       setRendering(false);
     }
@@ -453,6 +457,12 @@ export default function InfographiePage() {
           </div>
         </div>
       </div>
+
+      {toastMsg && (
+        <div className="fixed bottom-6 right-6 bg-gray-800 border border-gray-700 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+          {toastMsg}
+        </div>
+      )}
     </div>
   );
 }

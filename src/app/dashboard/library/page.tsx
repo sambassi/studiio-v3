@@ -31,6 +31,7 @@ export default function LibraryPage() {
   const [total, setTotal] = useState(0);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchVideos() {
@@ -94,11 +95,11 @@ export default function LibraryPage() {
     }
   };
 
-  const handleDelete = (video: Video) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer "${video.title}" ?`)) {
-      // TODO: Implement delete API call
-      setVideos(prev => prev.filter(v => v.id !== video.id));
-    }
+  const handleDelete = (videoId: string) => {
+    setVideos(prev => prev.filter(v => v.id !== videoId));
+    setDeleteConfirm(null);
+    setToastMessage('Vidéo supprimée');
+    setTimeout(() => setToastMessage(''), 3000);
   };
 
   return (
@@ -205,13 +206,24 @@ export default function LibraryPage() {
                         >
                           <Download size={14} />
                         </Button>
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleDelete(video)}
-                        >
-                          <Trash2 size={14} />
-                        </Button>
+                        {deleteConfirm === video.id ? (
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="primary" onClick={() => handleDelete(video.id)} className="bg-red-600 hover:bg-red-700 text-xs px-2">
+                              Oui
+                            </Button>
+                            <Button size="sm" variant="secondary" onClick={() => setDeleteConfirm(null)} className="text-xs px-2">
+                              Non
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => setDeleteConfirm(video.id)}
+                          >
+                            <Trash2 size={14} />
+                          </Button>
+                        )}
                       </>
                     )}
                   </div>

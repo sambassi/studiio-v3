@@ -49,6 +49,7 @@ export function PostModal({
   const [magicInput, setMagicInput] = useState('');
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -109,13 +110,14 @@ export function PostModal({
   };
 
   const handleSave = async () => {
+    setErrorMsg(null);
     if (!caption.trim()) {
-      alert('Veuillez entrer une légende');
+      setErrorMsg('Veuillez entrer une légende');
       return;
     }
 
     if (selectedPlatforms.length === 0) {
-      alert('Sélectionnez au moins une plateforme');
+      setErrorMsg('Sélectionnez au moins une plateforme');
       return;
     }
 
@@ -143,11 +145,11 @@ export function PostModal({
         onSave(data.data);
         onClose();
       } else {
-        alert('Erreur lors de la sauvegarde');
+        setErrorMsg('Erreur lors de la sauvegarde');
       }
     } catch (error) {
       console.error('Error saving post:', error);
-      alert('Erreur lors de la sauvegarde');
+      setErrorMsg('Erreur lors de la sauvegarde');
     } finally {
       setSaving(false);
     }
@@ -313,6 +315,13 @@ export function PostModal({
               className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 resize-none h-32"
             />
           </div>
+
+          {/* Error Message */}
+          {errorMsg && (
+            <div className="bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-2 rounded-lg text-sm">
+              {errorMsg}
+            </div>
+          )}
 
           {/* Save Button */}
           <Button
