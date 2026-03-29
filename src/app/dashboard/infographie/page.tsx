@@ -131,7 +131,7 @@ export default function InfographiePage() {
   };
 
   return (
-    <div className="pl-64 min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 p-8">
+    <div className="space-y-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
