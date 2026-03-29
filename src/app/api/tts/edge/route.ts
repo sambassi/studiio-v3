@@ -20,23 +20,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use edge-tts via dynamic import
     try {
-      // Import from compiled output to avoid TypeScript parsing issues
-      const { MsEdgeTTS, OUTPUT_FORMAT } = await import('edge-tts/out/index.js');
-      const tts = new MsEdgeTTS();
-      await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
-
-      const readable = tts.toStream(text);
-      const chunks: Buffer[] = [];
-
-      for await (const chunk of readable) {
-        if (chunk instanceof Buffer) {
-          chunks.push(chunk);
-        }
-      }
-
-      const audioBuffer = Buffer.concat(chunks);
+      // edge-tts exports a simple tts(text, options) => Promise<Buffer>
+      const { tts } = await import('edge-tts/out/index.js');
+      const audioBuffer = await tts(text, { voice, rate });
 
       return new NextResponse(audioBuffer, {
         headers: {
@@ -45,61 +32,25 @@ export async function POST(req: NextRequest) {
         },
       });
     } catch (ttsError: any) {
-      console.error('edge-tts error:', ttsError);
-
-      // Fallback: try Azure REST API if AZURE_SPEECH_KEY is set
-      if (process.env.AZURE_SPEECH_KEY) {
-        const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="fr-FR"><voice name="${voice}"><prosody rate="${rate}">${escapeXml(text)}</prosody></voice></speak>`;
-
-        const ttsResponse = await fetch(
-          'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1',
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/ssml+xml',
-              'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-              'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY,
-            },
-            body: ssml,
-          }
-        );
-
-        if (ttsResponse.ok) {
-          const audioBuffer = await ttsResponse.arrayBuffer();
-          return new NextResponse(Buffer.from(audioBuffer), {
-            headers: {
-              'Content-Type': 'audio/mpeg',
-              'Content-Disposition': 'attachment; filename="voix-off.mp3"',
-            },
-          });
-        }
-      }
+      console.error('edge-tts error:', ttsError?.message || ttsError);
 
       return NextResponse.json(
         {
           success: false,
           error: 'Service TTS temporairement indisponible. Utilisez l\'option upload pour votre voix off.',
+          details: ttsError?.message,
           fallback: true,
         },
         { status: 503 }
       );
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('TTS Error:', error);
     return NextResponse.json(
       { success: false, error: 'Erreur serveur TTS' },
       { status: 500 }
     );
   }
-}
-
-function escapeXml(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
 }
 
 // GET - List available voices

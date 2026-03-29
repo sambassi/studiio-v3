@@ -10,7 +10,7 @@ import {
   Zap, Target, Eye, Heart, TrendingUp, ChevronRight, ChevronLeft,
   Music, Image, Clock, Loader2, AlertCircle, CheckCircle,
   Sparkles, Mic, Volume2, RefreshCw, Calendar, Download,
-  Copy, Settings, Wand2, FileText, ArrowUp, ArrowDown, Type
+  Copy, Settings, Wand2, FileText, ArrowUp, ArrowDown, Type, Search
 } from 'lucide-react';
 
 // Types
@@ -144,6 +144,9 @@ export default function CreatorPage() {
   const [characterFile, setCharacterFile] = useState<File | null>(null);
   const [characterPreview, setCharacterPreview] = useState<string | null>(null);
   const [characterMode, setCharacterMode] = useState<'upload' | 'ai'>('upload');
+  const [aiSearchQuery, setAiSearchQuery] = useState('');
+  const [aiCharacterUrl, setAiCharacterUrl] = useState<string | null>(null);
+  const [aiCharacterLoading, setAiCharacterLoading] = useState(false);
 
   // Voix off
   const [voiceMode, setVoiceMode] = useState<VoiceMode>('off');
@@ -309,6 +312,23 @@ export default function CreatorPage() {
     if (characterPreview) URL.revokeObjectURL(characterPreview);
     setCharacterFile(file);
     setCharacterPreview(URL.createObjectURL(file));
+  };
+
+  // Fetch Pexels photo for AI character
+  const fetchAiCharacter = async (query?: string) => {
+    const searchTerm = query || aiSearchQuery || selectedObjectives.join(' ') || 'fitness athlete';
+    setAiCharacterLoading(true);
+    try {
+      const res = await fetch(`/api/pexels/search?q=${encodeURIComponent(searchTerm + ' person portrait')}&per_page=5`);
+      const data = await res.json();
+      if (data.photos?.length) {
+        const photo = data.photos[Math.floor(Math.random() * data.photos.length)];
+        const url = photo.src?.medium || photo.src?.large || photo.url;
+        setAiCharacterUrl(url);
+        setCharacterPreview(url);
+      }
+    } catch (e) { console.error('Pexels fetch error:', e); }
+    setAiCharacterLoading(false);
   };
 
   // Timeline duration change
@@ -846,10 +866,43 @@ export default function CreatorPage() {
                       </label>
                     )
                   ) : (
-                    <div className="bg-gray-800 rounded-lg p-4 text-center">
-                      <Sparkles className="w-8 h-8 text-purple-400 mx-auto mb-2" />
-                      <p className="text-sm text-gray-300 mb-2">L'IA sélectionnera un personnage adapté à votre objectif</p>
-                      <p className="text-xs text-gray-500">Basé sur : {selectedObjectives.join(', ') || 'aucun objectif'}</p>
+                    <div className="bg-gray-800 rounded-lg p-4 space-y-3">
+                      {/* Search input */}
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Ex: femme fitness, homme musculation..."
+                          value={aiSearchQuery}
+                          onChange={(e) => setAiSearchQuery(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && fetchAiCharacter()}
+                          className="flex-1 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 text-sm text-white placeholder-gray-500 outline-none focus:border-purple-500 transition"
+                        />
+                        <button
+                          onClick={() => fetchAiCharacter()}
+                          disabled={aiCharacterLoading}
+                          className="px-3 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-700 rounded-lg text-white text-sm transition"
+                        >
+                          {aiCharacterLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      {/* Preview */}
+                      {aiCharacterUrl ? (
+                        <div className="relative">
+                          <img src={aiCharacterUrl} className="w-full h-48 object-cover rounded-lg" alt="Personnage IA" />
+                          <button
+                            onClick={() => fetchAiCharacter()}
+                            className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 p-1.5 rounded-full transition"
+                            title="Autre image"
+                          >
+                            <RefreshCw className="w-4 h-4 text-white" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-center py-4">
+                          <Sparkles className="w-6 h-6 text-purple-400 mx-auto mb-2" />
+                          <p className="text-xs text-gray-500">Tapez une description ou cliquez rechercher</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
