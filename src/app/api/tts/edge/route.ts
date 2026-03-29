@@ -3,8 +3,7 @@ import { auth } from '@/lib/auth/config';
 
 export const maxDuration = 30;
 
-// Edge TTS API proxy - generates speech from text using Microsoft Edge TTS
-// This calls the free Edge TTS service
+// Edge TTS via WebSocket - free Microsoft TTS
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -21,57 +20,69 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use the Azure Cognitive Services TTS endpoint (free tier compatible)
-    // Edge TTS uses WebSocket but for server-side we use REST API
-    const ssml = `
-      <speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="fr-FR">
-        <voice name="${voice}">
-          <prosody rate="${rate}">
-            ${escapeXml(text)}
-          </prosody>
-        </voice>
-      </speak>
-    `.trim();
+    // Use edge-tts via dynamic import
+    try {
+      const { MsEdgeTTS, OUTPUT_FORMAT } = await import('edge-tts');
+      const tts = new MsEdgeTTS();
+      await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
 
-    // Try Azure free TTS endpoint
-    const ttsResponse = await fetch(
-      'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/ssml+xml',
-          'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
-          'User-Agent': 'studiio-pro',
-          // Note: For production, use AZURE_SPEECH_KEY env var
-          ...(process.env.AZURE_SPEECH_KEY
-            ? { 'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY }
-            : {}),
-        },
-        body: ssml,
+      const readable = tts.toStream(text);
+      const chunks: Buffer[] = [];
+
+      for await (const chunk of readable) {
+        if (chunk instanceof Buffer) {
+          chunks.push(chunk);
+        }
       }
-    );
 
-    if (!ttsResponse.ok) {
-      // Fallback: return a placeholder message
-      // In production, Edge TTS npm package would be used server-side
+      const audioBuffer = Buffer.concat(chunks);
+
+      return new NextResponse(audioBuffer, {
+        headers: {
+          'Content-Type': 'audio/mpeg',
+          'Content-Disposition': 'attachment; filename="voix-off.mp3"',
+        },
+      });
+    } catch (ttsError: any) {
+      console.error('edge-tts error:', ttsError);
+
+      // Fallback: try Azure REST API if AZURE_SPEECH_KEY is set
+      if (process.env.AZURE_SPEECH_KEY) {
+        const ssml = `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xml:lang="fr-FR"><voice name="${voice}"><prosody rate="${rate}">${escapeXml(text)}</prosody></voice></speak>`;
+
+        const ttsResponse = await fetch(
+          'https://eastus.tts.speech.microsoft.com/cognitiveservices/v1',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/ssml+xml',
+              'X-Microsoft-OutputFormat': 'audio-16khz-128kbitrate-mono-mp3',
+              'Ocp-Apim-Subscription-Key': process.env.AZURE_SPEECH_KEY,
+            },
+            body: ssml,
+          }
+        );
+
+        if (ttsResponse.ok) {
+          const audioBuffer = await ttsResponse.arrayBuffer();
+          return new NextResponse(Buffer.from(audioBuffer), {
+            headers: {
+              'Content-Type': 'audio/mpeg',
+              'Content-Disposition': 'attachment; filename="voix-off.mp3"',
+            },
+          });
+        }
+      }
+
       return NextResponse.json(
         {
           success: false,
-          error: 'Service TTS temporairement indisponible. Utilisez l\'option upload pour ajouter votre propre voix off.',
+          error: 'Service TTS temporairement indisponible. Utilisez l\'option upload pour votre voix off.',
           fallback: true,
         },
         { status: 503 }
       );
     }
-
-    const audioBuffer = await ttsResponse.arrayBuffer();
-
-    return new NextResponse(Buffer.from(audioBuffer), {
-      headers: {
-        'Content-Type': 'audio/mpeg',
-        'Content-Disposition': 'attachment; filename="voix-off.mp3"',
-      },
-    });
   } catch (error) {
     console.error('TTS Error:', error);
     return NextResponse.json(

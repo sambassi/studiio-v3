@@ -92,6 +92,13 @@ export default function InfographiePage() {
   const voixOffInputRef = useRef<HTMLInputElement>(null);
   const logoInputRef = useRef<HTMLInputElement>(null);
 
+  // Export destination
+  type ExportDestination = 'desktop' | 'calendar' | 'both';
+  const [exportDestination, setExportDestination] = useState<'desktop' | 'calendar' | 'both'>('calendar');
+  const [renderProgress, setRenderProgress] = useState(0);
+  const [renderStatus, setRenderStatus] = useState<'idle' | 'uploading' | 'rendering' | 'completed' | 'error'>('idle');
+  const [renderError, setRenderError] = useState<string | null>(null);
+
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -164,6 +171,10 @@ export default function InfographiePage() {
     if (!session?.user) return;
 
     setRendering(true);
+    setRenderStatus('uploading');
+    setRenderProgress(10);
+    setRenderError(null);
+
     try {
       const formData = new FormData();
       formData.append('title', title);
@@ -172,6 +183,8 @@ export default function InfographiePage() {
       formData.append('cards', JSON.stringify(cards));
       formData.append('duration', duration.toString());
       formData.append('batch', batchMode.toString());
+      formData.append('destination', exportDestination);
+      formData.append('salesPhrase', salesPhrase);
 
       if (photoPersonnage) formData.append('character', photoPersonnage);
       if (mixVideo) formData.append('mixVideo', mixVideo);
@@ -179,25 +192,60 @@ export default function InfographiePage() {
       if (voixOff) formData.append('voixOff', voixOff);
       if (logo) formData.append('logo', logo);
 
+      // Upload batch photos if in batch mode
+      if (batchMode) {
+        batchPhotos.forEach((photo, i) => {
+          if (photo) formData.append(`batchPhoto_${i}`, photo);
+        });
+      }
+
+      setRenderProgress(30);
+      setRenderStatus('rendering');
+
       const response = await fetch('/api/infographie', {
         method: 'POST',
         body: formData,
       });
 
-      if (response.ok) {
-        setToastMsg('Vidéo en cours de rendu!');
-        setTimeout(() => setToastMsg(null), 4000);
+      setRenderProgress(70);
+
+      const data = await response.json();
+
+      if (data.success) {
+        setRenderProgress(100);
+        setRenderStatus('completed');
+
+        // If destination includes calendar, show calendar message
+        if (exportDestination === 'calendar' || exportDestination === 'both') {
+          setToastMsg(batchMode
+            ? '10 infographies ajoutées en brouillon au calendrier !'
+            : 'Infographie ajoutée en brouillon au calendrier !');
+        }
+        if (exportDestination === 'desktop' || exportDestination === 'both') {
+          setToastMsg(prev => (prev ? prev + ' Export disponible.' : 'Export disponible sur le bureau.'));
+        }
+        setTimeout(() => setToastMsg(null), 5000);
       } else {
-        setToastMsg('Erreur lors du rendu');
-        setTimeout(() => setToastMsg(null), 4000);
+        setRenderStatus('error');
+        setRenderError(data.error || 'Erreur lors du rendu');
       }
     } catch (error) {
       console.error(error);
-      setToastMsg('Erreur lors du rendu');
-      setTimeout(() => setToastMsg(null), 4000);
+      setRenderStatus('error');
+      setRenderError('Erreur réseau');
     } finally {
-      setRendering(false);
+      // Don't reset rendering if completed - let user see the result
+      if (renderStatus === 'error') {
+        setRendering(false);
+      }
     }
+  };
+
+  const resetRender = () => {
+    setRendering(false);
+    setRenderStatus('idle');
+    setRenderProgress(0);
+    setRenderError(null);
   };
 
   return (
@@ -644,24 +692,101 @@ export default function InfographiePage() {
               </CardContent>
             </Card>
 
-            {/* Export Button */}
-            <Button
-              onClick={handleExport}
-              disabled={rendering}
-              className="w-full bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white font-bold py-3 rounded-lg flex items-center justify-center gap-2"
-            >
-              {rendering ? (
-                <>
-                  <Loader2 size={20} className="animate-spin" />
-                  Rendu en cours...
-                </>
-              ) : (
-                <>
-                  <Zap size={20} />
-                  EXPORTER LA VIDÉO
-                </>
-              )}
-            </Button>
+            {/* Export Destination */}
+            <Card className="card-base border border-gray-700">
+              <CardContent className="p-4">
+                <h4 className="text-sm font-semibold text-white mb-3">Destination</h4>
+                <div className="space-y-2">
+                  {([
+                    { id: 'calendar' as const, label: 'Calendrier (brouillon)', icon: '📅' },
+                    { id: 'desktop' as const, label: 'Export fichier', icon: '💾' },
+                    { id: 'both' as const, label: 'Les deux', icon: '🔄' },
+                  ]).map(dest => (
+                    <button
+                      key={dest.id}
+                      onClick={() => setExportDestination(dest.id)}
+                      className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition ${
+                        exportDestination === dest.id
+                          ? 'bg-purple-500/20 text-purple-300 border border-purple-500'
+                          : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600'
+                      }`}
+                    >
+                      <span>{dest.icon}</span>
+                      <span>{dest.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Export Button + Progress */}
+            {renderStatus === 'completed' ? (
+              <div className="text-center space-y-3">
+                <div className="bg-green-900/30 border border-green-700 rounded-lg p-4">
+                  <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-2" />
+                  <p className="text-green-300 font-medium">
+                    {batchMode ? '10 infographies créées !' : 'Infographie créée !'}
+                  </p>
+                  {(exportDestination === 'calendar' || exportDestination === 'both') && (
+                    <a href="/dashboard/calendar" className="text-purple-400 text-sm hover:underline block mt-2">
+                      Voir le calendrier →
+                    </a>
+                  )}
+                </div>
+                <button onClick={resetRender} className="text-gray-400 text-sm hover:text-white transition">
+                  Créer une nouvelle infographie
+                </button>
+              </div>
+            ) : renderStatus === 'error' ? (
+              <div className="text-center space-y-3">
+                <div className="bg-red-900/30 border border-red-700 rounded-lg p-4">
+                  <p className="text-red-300 text-sm">{renderError}</p>
+                </div>
+                <button onClick={resetRender} className="px-4 py-2 bg-gray-700 text-white rounded-lg text-sm hover:bg-gray-600">
+                  Réessayer
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {rendering && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs text-gray-400">
+                      <span>{renderStatus === 'uploading' ? 'Upload des fichiers...' : 'Rendu en cours...'}</span>
+                      <span>{renderProgress}%</span>
+                    </div>
+                    <div className="w-full bg-gray-700 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
+                        style={{ width: `${renderProgress}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <button
+                  onClick={handleExport}
+                  disabled={rendering}
+                  className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-white font-bold rounded-lg transition flex items-center justify-center gap-2"
+                >
+                  {rendering ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      Rendu en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-5 h-5" />
+                      {batchMode ? 'EXPORTER BATCH x10' : 'EXPORTER LA VIDÉO'}
+                    </>
+                  )}
+                </button>
+                <p className="text-center text-xs text-gray-500">
+                  {batchMode ? '50 crédits' : '25 crédits'} • Destination : {
+                    exportDestination === 'calendar' ? 'Calendrier' :
+                    exportDestination === 'desktop' ? 'Export' : 'Calendrier + Export'
+                  }
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

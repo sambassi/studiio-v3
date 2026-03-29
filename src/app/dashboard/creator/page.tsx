@@ -10,7 +10,7 @@ import {
   Zap, Target, Eye, Heart, TrendingUp, ChevronRight, ChevronLeft,
   Music, Image, Clock, Loader2, AlertCircle, CheckCircle,
   Sparkles, Mic, Volume2, RefreshCw, Calendar, Download,
-  Copy, Settings, Wand2, FileText
+  Copy, Settings, Wand2, FileText, ArrowUp, ArrowDown, Type
 } from 'lucide-react';
 
 // Types
@@ -19,6 +19,8 @@ interface VideoSlot {
   file: File | null;
   preview: string | null;
   name: string;
+  type?: 'video' | 'title-card';
+  titleText?: string;
 }
 
 interface TimelineItem {
@@ -90,6 +92,34 @@ const TITLE_SUGGESTIONS: Record<Objective, string[]> = {
   ],
 };
 
+const SUBTITLE_SUGGESTIONS: Record<Objective, string[]> = {
+  promotion: [
+    'Ne rate pas cette opportunité',
+    'Valable pour les 50 premiers',
+    'Seulement cette semaine',
+  ],
+  abonnement: [
+    'Lance-toi dès maintenant',
+    'Ton futur commence ici',
+    'Réserve ta place',
+  ],
+  motivation: [
+    'Chaque effort compte',
+    'Tu es plus fort que tu ne le crois',
+    'C\'est maintenant ou jamais',
+  ],
+  bienfaits: [
+    'Découvre les effets sur ton corps',
+    'Des résultats prouvés scientifiquement',
+    'Investis dans ta santé',
+  ],
+  nutrition: [
+    'Des conseils adaptés à tes objectifs',
+    'Optimise ta récupération',
+    'Le carburant de ta performance',
+  ],
+};
+
 const MAX_SLOTS = 10;
 
 export default function CreatorPage() {
@@ -144,7 +174,7 @@ export default function CreatorPage() {
     if (session?.user) {
       fetch('/api/credits/balance')
         .then(r => r.json())
-        .then(d => { if (d.credits !== undefined) setCredits(d.credits); })
+        .then(d => { if (d.data?.credits !== undefined) setCredits(d.data.credits); })
         .catch(() => {});
     }
   }, [session]);
@@ -232,6 +262,27 @@ export default function CreatorPage() {
     }
   };
 
+  const moveSlot = (index: number, direction: 'up' | 'down') => {
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= rushSlots.length) return;
+    const updated = [...rushSlots];
+    [updated[index], updated[newIndex]] = [updated[newIndex], updated[index]];
+    setRushSlots(updated);
+  };
+
+  const addTitleCard = () => {
+    if (rushSlots.length < MAX_SLOTS) {
+      setRushSlots([...rushSlots, {
+        id: String(Date.now()),
+        file: null,
+        preview: null,
+        name: 'Carte titre',
+        type: 'title-card',
+        titleText: '',
+      }]);
+    }
+  };
+
   const handleRushUpload = (index: number, file: File) => {
     const updated = [...rushSlots];
     if (updated[index].preview) URL.revokeObjectURL(updated[index].preview!);
@@ -260,6 +311,14 @@ export default function CreatorPage() {
   // Apply IA title suggestion
   const applySuggestion = (suggestion: string) => {
     setTitle(suggestion);
+    // Also suggest a subtitle
+    const allSubtitles: string[] = [];
+    selectedObjectives.forEach(obj => {
+      allSubtitles.push(...(SUBTITLE_SUGGESTIONS[obj] || []));
+    });
+    if (allSubtitles.length > 0) {
+      setSubtitle(allSubtitles[Math.floor(Math.random() * allSubtitles.length)]);
+    }
     setShowTitleSuggestions(false);
   };
 
@@ -280,9 +339,13 @@ export default function CreatorPage() {
         const blob = await res.blob();
         const file = new File([blob], 'voix-off.mp3', { type: 'audio/mpeg' });
         setVoiceFile(file);
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.error || 'Erreur lors de la génération de la voix. Utilisez l\'option upload.');
       }
     } catch (error) {
       console.error('Error generating voice:', error);
+      alert('Erreur réseau. Vérifiez votre connexion.');
     } finally {
       setGeneratingVoice(false);
     }
@@ -304,6 +367,7 @@ export default function CreatorPage() {
       formData.append('objectives', JSON.stringify(selectedObjectives));
       formData.append('timeline', JSON.stringify(timeline));
 
+      formData.append('destination', batchDestination);
       if (batchMode) {
         formData.append('batch', 'true');
         formData.append('batchCount', String(batchCount));
@@ -423,14 +487,14 @@ export default function CreatorPage() {
 
           {/* Title overlay */}
           {title && (
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="bg-black/40 backdrop-blur-sm px-4 py-2 rounded-lg max-w-[90%]">
-                <p className="text-white text-center font-bold text-sm drop-shadow-[0_0_8px_rgba(217,28,210,0.8)]"
-                   style={{ textShadow: '0 0 20px rgba(217, 28, 210, 0.6)' }}>
+            <div className="absolute inset-0 flex items-center justify-center px-3">
+              <div className="max-w-[90%] text-center">
+                <p className="text-white font-bold text-sm drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]"
+                   style={{ textShadow: '0 0 20px rgba(217, 28, 210, 0.6), 0 2px 4px rgba(0,0,0,0.8)' }}>
                   {title}
                 </p>
                 {subtitle && (
-                  <p className="text-gray-200 text-center text-xs mt-1">{subtitle}</p>
+                  <p className="text-gray-200 text-center text-xs mt-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)]">{subtitle}</p>
                 )}
               </div>
             </div>
@@ -600,35 +664,81 @@ export default function CreatorPage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <CardTitle>Rush vidéos ({rushSlots.filter(s => s.file).length}/{rushSlots.length})</CardTitle>
-                    {rushSlots.length < MAX_SLOTS && (
-                      <Button variant="outline" size="sm" onClick={addSlot}><Plus className="w-4 h-4 mr-1" /> Ajouter</Button>
-                    )}
+                    <div className="flex gap-2">
+                      {rushSlots.length < MAX_SLOTS && (
+                        <>
+                          <Button variant="outline" size="sm" onClick={addSlot}><Plus className="w-4 h-4 mr-1" /> Ajouter</Button>
+                          <Button variant="outline" size="sm" onClick={addTitleCard}><Type className="w-4 h-4 mr-1" /> Carte titre</Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  <div className="space-y-3">
                     {rushSlots.map((slot, i) => (
-                      <div key={slot.id} className="relative">
-                        {slot.preview ? (
-                          <div className="aspect-[9/16] bg-gray-800 rounded-lg overflow-hidden relative group">
-                            <video src={slot.preview} className="w-full h-full object-cover" muted />
-                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition flex items-center justify-center gap-2">
-                              <button onClick={() => removeSlot(i)} className="p-1 bg-red-600 rounded">
-                                <Trash2 className="w-4 h-4 text-white" />
-                              </button>
-                            </div>
-                            <div className="absolute bottom-0 left-0 right-0 bg-black/60 px-2 py-1 text-xs text-white truncate">
-                              {slot.name}
+                      <div key={slot.id} className="flex items-center gap-2">
+                        {slot.type === 'title-card' ? (
+                          // Title card slot
+                          <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-gray-700">
+                            <div className="flex items-center gap-3">
+                              <Type className="w-5 h-5 text-pink-400" />
+                              <input
+                                type="text"
+                                placeholder="Texte de la carte titre"
+                                value={slot.titleText || ''}
+                                onChange={(e) => {
+                                  const updated = [...rushSlots];
+                                  updated[i].titleText = e.target.value;
+                                  setRushSlots(updated);
+                                }}
+                                className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-sm"
+                              />
                             </div>
                           </div>
                         ) : (
-                          <label className="aspect-[9/16] bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition">
-                            <Upload className="w-6 h-6 text-gray-400 mb-1" />
-                            <span className="text-xs text-gray-400">Rush {i + 1}</span>
-                            <input type="file" accept="video/*" className="hidden"
-                              onChange={e => e.target.files?.[0] && handleRushUpload(i, e.target.files[0])} />
-                          </label>
+                          // Video slot
+                          <div className="flex-1">
+                            {slot.preview ? (
+                              <div className="bg-gray-800 rounded-lg overflow-hidden relative group p-2">
+                                <div className="aspect-[9/16] bg-gray-700 rounded overflow-hidden mb-2">
+                                  <video src={slot.preview} className="w-full h-full object-cover" muted />
+                                </div>
+                                <p className="text-xs text-gray-300 truncate">{slot.name}</p>
+                              </div>
+                            ) : (
+                              <label className="block aspect-[9/16] bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition">
+                                <Upload className="w-6 h-6 text-gray-400 mb-1" />
+                                <span className="text-xs text-gray-400">Rush {i + 1}</span>
+                                <input type="file" accept="video/*" className="hidden"
+                                  onChange={e => e.target.files?.[0] && handleRushUpload(i, e.target.files[0])} />
+                              </label>
+                            )}
+                          </div>
                         )}
+
+                        {/* Move buttons */}
+                        <div className="flex flex-col gap-1">
+                          <button
+                            onClick={() => moveSlot(i, 'up')}
+                            disabled={i === 0}
+                            className="p-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                          >
+                            <ArrowUp className="w-4 h-4 text-gray-300" />
+                          </button>
+                          <button
+                            onClick={() => moveSlot(i, 'down')}
+                            disabled={i === rushSlots.length - 1}
+                            className="p-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                          >
+                            <ArrowDown className="w-4 h-4 text-gray-300" />
+                          </button>
+                        </div>
+
+                        {/* Delete button */}
+                        <button onClick={() => removeSlot(i)} className="p-1 bg-red-600 hover:bg-red-700 rounded">
+                          <Trash2 className="w-4 h-4 text-white" />
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -984,6 +1094,31 @@ export default function CreatorPage() {
                 )}
               </Card>
 
+              {/* Destination (always visible) */}
+              {!batchMode && (
+                <Card>
+                  <CardHeader><CardTitle><Download className="w-4 h-4 inline mr-2" />Destination</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([
+                        { id: 'calendar' as BatchDestination, label: 'Brouillons calendrier', icon: Calendar },
+                        { id: 'export' as BatchDestination, label: 'Export bureau', icon: Download },
+                        { id: 'both' as BatchDestination, label: 'Les deux', icon: Copy },
+                      ]).map(d => (
+                        <button
+                          key={d.id}
+                          onClick={() => setBatchDestination(d.id)}
+                          className={`p-3 rounded-lg border text-center transition ${batchDestination === d.id ? 'border-purple-500 bg-purple-500/10 text-white' : 'border-gray-700 text-gray-400'}`}
+                        >
+                          <d.icon size={18} className="mx-auto mb-1" />
+                          <span className="text-xs">{d.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
               {/* Render area */}
               <Card>
                 <CardContent className="pt-6">
@@ -994,9 +1129,11 @@ export default function CreatorPage() {
                         {batchMode ? `${batchCount} vidéos terminées !` : 'Vidéo terminée !'}
                       </h3>
                       <p className="text-gray-400">
-                        {batchMode && batchDestination !== 'export'
-                          ? 'Les vidéos ont été ajoutées en brouillon dans votre calendrier.'
-                          : 'Votre vidéo est prête.'}
+                        {batchDestination === 'calendar'
+                          ? (batchMode ? 'Les vidéos ont été ajoutées en brouillon dans votre calendrier.' : 'Votre vidéo a été ajoutée en brouillon dans votre calendrier.')
+                          : batchDestination === 'export'
+                          ? (batchMode ? 'Les vidéos sont prêtes à télécharger.' : 'Votre vidéo est prête à télécharger.')
+                          : (batchMode ? 'Les vidéos ont été ajoutées au calendrier et sont prêtes à télécharger.' : 'Votre vidéo a été ajoutée au calendrier et est prête à télécharger.')}
                       </p>
                       <div className="flex gap-3 justify-center">
                         <a href="/dashboard/library" className="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
