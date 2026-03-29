@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "remotion:preview": "remotion preview src/remotion/index.ts",
+    "remotion:render": "remotion render src/remotion/index.ts"
   },
   "dependencies": {
     "next": "^14.2.0",
@@ -20,7 +22,10 @@
     "zod": "^3.22.0",
     "lucide-react": "^0.383.0",
     "bcryptjs": "^2.4.3",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "remotion": "^4.0.0",
+    "@remotion/player": "^4.0.0",
+    "@remotion/cli": "^4.0.0"
   },
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
