@@ -131,8 +131,14 @@ export function PostModal({
       formData.append('status', activeTab === 'draft' ? 'draft' : activeTab === 'schedule' ? 'scheduled' : 'published');
       formData.append('media_type', mediaType);
 
+      // Use React state first, fallback to DOM input ref
       if (media) {
         formData.append('media', media);
+      } else if (mediaInputRef.current?.files?.[0]) {
+        const domFile = mediaInputRef.current.files[0];
+        formData.append('media', domFile);
+        const isVideo = domFile.type.startsWith('video/');
+        formData.append('media_type', isVideo ? 'video' : 'image');
       }
 
       const res = await fetch('/api/posts', {
