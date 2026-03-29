@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     // 2. Query user
     const { data: user, error: queryError } = await supabase
       .from('users')
-      .select('id, email, name, credits, plan, role, password_hash')
+      .select('*')
       .eq('email', email)
       .single();
 
@@ -54,12 +54,10 @@ export async function POST(req: NextRequest) {
       step: 'complete',
       supabaseOk,
       userFound: true,
+      columns: Object.keys(user),
       userId: user.id,
       email: user.email,
       name: user.name,
-      credits: user.credits,
-      plan: user.plan,
-      role: user.role,
       hasHash,
       hashPrefix,
       passwordValid,
