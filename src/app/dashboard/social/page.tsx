@@ -17,9 +17,9 @@ interface SocialAccount {
 
 const PLATFORMS = [
   { id: 'instagram', name: 'Instagram', icon: Instagram, color: 'text-pink-400', description: 'Reels, Stories, Posts' },
-  { id: 'tiktok', name: 'TikTok', icon: Music, color: 'text-cyan-400', description: 'Vid\u00e9os courtes virales' },
-  { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-blue-400', description: 'Vid\u00e9os, Reels, Stories' },
-  { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'text-red-400', description: 'Shorts, vid\u00e9os longues' },
+  { id: 'tiktok', name: 'TikTok', icon: Music, color: 'text-cyan-400', description: 'Vidéos courtes virales' },
+  { id: 'facebook', name: 'Facebook', icon: Facebook, color: 'text-blue-400', description: 'Vidéos, Reels, Stories' },
+  { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'text-red-400', description: 'Shorts, vidéos longues' },
 ];
 
 export default function SocialPage() {
@@ -62,9 +62,9 @@ export default function SocialPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold text-white mb-2">R\u00e9seaux sociaux</h1>
+        <h1 className="text-3xl font-bold text-white mb-2">Réseaux sociaux</h1>
         <p className="text-gray-400">
-          Connectez vos comptes pour publier vos vid\u00e9os automatiquement
+          Connectez vos comptes pour publier vos vidéos automatiquement
         </p>
       </div>
 
@@ -78,13 +78,13 @@ export default function SocialPage() {
             <div className="flex-1">
               <p className="text-white font-semibold">
                 {connectedCount > 0
-                  ? `${connectedCount} r\u00e9seau${connectedCount > 1 ? 'x' : ''} connect\u00e9${connectedCount > 1 ? 's' : ''}`
-                  : 'Aucun r\u00e9seau connect\u00e9'}
+                  ? `${connectedCount} réseau${connectedCount > 1 ? 'x' : ''} connecté${connectedCount > 1 ? 's' : ''}`
+                  : 'Aucun réseau connecté'}
               </p>
               <p className="text-sm text-gray-400">
                 {connectedCount > 0
-                  ? 'Vos vid\u00e9os peuvent \u00eatre publi\u00e9es automatiquement'
-                  : 'Connectez au moins un r\u00e9seau pour publier vos vid\u00e9os'}
+                  ? 'Vos vidéos peuvent être publiées automatiquement'
+                  : 'Connectez au moins un réseau pour publier vos vidéos'}
               </p>
             </div>
           </div>
@@ -119,7 +119,7 @@ export default function SocialPage() {
                   </div>
                   {account && (
                     <Badge variant="success">
-                      <Check size={12} className="mr-1" /> Connect\u00e9
+                      <Check size={12} className="mr-1" /> Connecté
                     </Badge>
                   )}
                 </div>
@@ -148,7 +148,7 @@ export default function SocialPage() {
       <Card>
         <CardHeader className="border-b border-gray-800">
           <CardTitle className="flex items-center gap-2">
-            <Calendar size={20} /> Param\u00e8tres de publication
+            <Calendar size={20} /> Paramètres de publication
           </CardTitle>
         </CardHeader>
         <CardContent className="pt-6">
@@ -156,8 +156,8 @@ export default function SocialPage() {
             <label className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-xl cursor-pointer hover:bg-gray-800 transition">
               <input type="checkbox" className="w-4 h-4 accent-studiio-primary" defaultChecked />
               <div>
-                <p className="font-medium text-white text-sm">Publication multi-r\u00e9seaux</p>
-                <p className="text-xs text-gray-400">Publiez automatiquement sur tous vos comptes connect\u00e9s</p>
+                <p className="font-medium text-white text-sm">Publication multi-réseaux</p>
+                <p className="text-xs text-gray-400">Publiez automatiquement sur tous vos comptes connectés</p>
               </div>
             </label>
             <label className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-xl cursor-pointer hover:bg-gray-800 transition">
@@ -170,8 +170,8 @@ export default function SocialPage() {
             <label className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-xl cursor-pointer hover:bg-gray-800 transition">
               <input type="checkbox" className="w-4 h-4 accent-studiio-primary" defaultChecked />
               <div>
-                <p className="font-medium text-white text-sm">L\u00e9gendes IA</p>
-                <p className="text-xs text-gray-400">G\u00e9n\u00e9rez des l\u00e9gendes et hashtags adapt\u00e9s \u00e0 chaque plateforme</p>
+                <p className="font-medium text-white text-sm">Légendes IA</p>
+                <p className="text-xs text-gray-400">Générez des légendes et hashtags adaptés à chaque plateforme</p>
               </div>
             </label>
           </div>
@@ -184,9 +184,9 @@ export default function SocialPage() {
           <div className="flex items-start gap-3">
             <AlertCircle className="text-yellow-500 mt-0.5 flex-shrink-0" size={20} />
             <div>
-              <p className="text-white font-semibold text-sm">Publication en cours de d\u00e9veloppement</p>
+              <p className="text-white font-semibold text-sm">Publication en cours de développement</p>
               <p className="text-xs text-gray-400 mt-1">
-                La publication automatique sera bient\u00f4t disponible. Vous pourrez publier directement vos vid\u00e9os
+                La publication automatique sera bientôt disponible. Vous pourrez publier directement vos vidéos
                 sur Instagram, TikTok, Facebook et YouTube depuis Studiio.
               </p>
             </div>

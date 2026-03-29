@@ -83,10 +83,10 @@ export default function ObjectivesPage() {
       <div className="flex justify-between items-start">
         <div>
           <h1 className="text-3xl font-bold text-white mb-2">Objectifs</h1>
-          <p className="text-gray-400">D\u00e9finissez vos objectifs de cr\u00e9ation vid\u00e9o</p>
+          <p className="text-gray-400">Définissez vos objectifs de création vidéo</p>
         </div>
         <Button variant="primary" onClick={() => setShowForm(!showForm)}>
-          {showForm ? 'Annuler' : '+ Cr\u00e9er un objectif'}
+          {showForm ? 'Annuler' : '+ Créer un objectif'}
         </Button>
       </div>
 
@@ -106,7 +106,7 @@ export default function ObjectivesPage() {
               />
               <Input
                 label="Description"
-                placeholder="D\u00e9crivez votre objectif"
+                placeholder="Décrivez votre objectif"
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
@@ -131,7 +131,7 @@ export default function ObjectivesPage() {
                 label="Ton"
                 options={[
                   { value: 'ludique', label: 'Ludique' },
-                  { value: 'educatif', label: '\u00c9ducatif' },
+                  { value: 'educatif', label: 'Éducatif' },
                   { value: 'tendance', label: 'Tendance' },
                   { value: 'professionnel', label: 'Professionnel' },
                   { value: 'motivant', label: 'Motivant' },
@@ -142,7 +142,7 @@ export default function ObjectivesPage() {
             </CardContent>
             <CardFooter>
               <Button variant="primary" type="submit" disabled={saving}>
-                {saving ? <><Loader2 size={16} className="animate-spin mr-2 inline" /> Cr\u00e9ation...</> : 'Cr\u00e9er'}
+                {saving ? <><Loader2 size={16} className="animate-spin mr-2 inline" /> Création...</> : 'Créer'}
               </Button>
             </CardFooter>
           </form>
@@ -158,9 +158,9 @@ export default function ObjectivesPage() {
         <div className="text-center py-16">
           <Target className="mx-auto text-gray-600 mb-4" size={64} />
           <h3 className="text-xl font-bold text-white mb-2">Aucun objectif</h3>
-          <p className="text-gray-400 mb-6">Cr\u00e9ez votre premier objectif pour guider votre strat\u00e9gie vid\u00e9o</p>
+          <p className="text-gray-400 mb-6">Créez votre premier objectif pour guider votre stratégie vidéo</p>
           <Button variant="primary" onClick={() => setShowForm(true)}>
-            Cr\u00e9er un objectif
+            Créer un objectif
           </Button>
         </div>
       ) : (

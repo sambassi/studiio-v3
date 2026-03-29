@@ -23,12 +23,12 @@ export function CreditsDisplay({ credits, plan, loading }: CreditsDisplayProps) 
         ) : (
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm mb-2">Cr\u00e9dits disponibles</p>
+              <p className="text-gray-400 text-sm mb-2">Crédits disponibles</p>
               <p className="text-4xl font-bold text-studiio-accent">{credits.toLocaleString()}</p>
               <p className="text-xs text-gray-400 mt-2">Plan {planLabel}</p>
               {credits < 20 && (
                 <Link href="/dashboard/billing" className="text-xs text-studiio-primary hover:text-purple-400 mt-1 block">
-                  Recharger vos cr\u00e9dits \u2192
+                  Recharger vos crédits →
                 </Link>
               )}
             </div>

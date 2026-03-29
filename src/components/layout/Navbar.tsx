@@ -23,7 +23,7 @@ export function Navbar() {
           <button
             onClick={() => signOut({ callbackUrl: '/auth/login' })}
             className="text-gray-400 hover:text-red-400 transition"
-            title="D\u00e9connexion"
+            title="Déconnexion"
           >
             <LogOut size={20} />
           </button>

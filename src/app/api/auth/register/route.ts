@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     if (password.length < 6) {
       return NextResponse.json(
-        { success: false, error: 'Le mot de passe doit contenir au moins 6 caract\u00e8res' },
+        { success: false, error: 'Le mot de passe doit contenir au moins 6 caractères' },
         { status: 400 }
       );
     }
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
     if (existingUser) {
       return NextResponse.json(
-        { success: false, error: 'Un compte avec cet email existe d\u00e9j\u00e0' },
+        { success: false, error: 'Un compte avec cet email existe déjà' },
         { status: 409 }
       );
     }
@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json(
-        { success: false, error: 'Erreur lors de la cr\u00e9ation du compte' },
+        { success: false, error: 'Erreur lors de la création du compte' },
         { status: 500 }
       );
     }

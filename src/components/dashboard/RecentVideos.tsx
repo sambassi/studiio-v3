@@ -44,9 +44,9 @@ export function RecentVideos() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed': return 'Termin\u00e9e';
+      case 'completed': return 'Terminée';
       case 'rendering': return 'Rendu';
-      case 'published': return 'Publi\u00e9e';
+      case 'published': return 'Publiée';
       default: return 'Brouillon';
     }
   };
@@ -63,7 +63,7 @@ export function RecentVideos() {
   return (
     <Card>
       <CardHeader className="border-b border-gray-800 pb-4">
-        <CardTitle>Vid\u00e9os r\u00e9centes</CardTitle>
+        <CardTitle>Vidéos récentes</CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
         {loading ? (
@@ -83,9 +83,9 @@ export function RecentVideos() {
         ) : videos.length === 0 ? (
           <div className="text-center py-8">
             <Film className="mx-auto text-gray-600 mb-3" size={48} />
-            <p className="text-gray-400 mb-2">Aucune vid\u00e9o pour le moment</p>
+            <p className="text-gray-400 mb-2">Aucune vidéo pour le moment</p>
             <Link href="/dashboard/creator" className="text-studiio-primary hover:text-purple-400 font-semibold text-sm">
-              Cr\u00e9er votre premi\u00e8re vid\u00e9o \u2192
+              Créer votre première vidéo →
             </Link>
           </div>
         ) : (
@@ -112,7 +112,7 @@ export function RecentVideos() {
         )}
         {videos.length > 0 && (
           <Link href="/dashboard/library" className="block text-center mt-4 text-studiio-primary hover:text-purple-400 font-semibold text-sm">
-            Voir toutes les vid\u00e9os \u2192
+            Voir toutes les vidéos →
           </Link>
         )}
       </CardContent>

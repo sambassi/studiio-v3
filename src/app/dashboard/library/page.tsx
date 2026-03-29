@@ -67,9 +67,9 @@ export default function LibraryPage() {
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'completed': return 'Termin\u00e9e';
+      case 'completed': return 'Terminée';
       case 'rendering': return 'Rendu en cours';
-      case 'published': return 'Publi\u00e9e';
+      case 'published': return 'Publiée';
       default: return 'Brouillon';
     }
   };
@@ -87,31 +87,31 @@ export default function LibraryPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white mb-2">Biblioth\u00e8que</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Bibliothèque</h1>
           <p className="text-gray-400">
-            {total > 0 ? `${total} vid\u00e9o${total > 1 ? 's' : ''} cr\u00e9\u00e9e${total > 1 ? 's' : ''}` : 'G\u00e9rez toutes vos vid\u00e9os cr\u00e9\u00e9es'}
+            {total > 0 ? `${total} vidéo${total > 1 ? 's' : ''} créée${total > 1 ? 's' : ''}` : 'Gérez toutes vos vidéos créées'}
           </p>
         </div>
         <Link href="/dashboard/creator">
           <Button variant="primary" size="md">
-            Cr\u00e9er une vid\u00e9o
+            Créer une vidéo
           </Button>
         </Link>
       </div>
 
       <div className="flex gap-4 items-end">
         <Input
-          placeholder="Rechercher une vid\u00e9o..."
+          placeholder="Rechercher une vidéo..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex-1"
         />
         <Select
           options={[
-            { value: 'completed', label: 'Termin\u00e9e' },
+            { value: 'completed', label: 'Terminée' },
             { value: 'rendering', label: 'Rendu en cours' },
             { value: 'draft', label: 'Brouillon' },
-            { value: 'published', label: 'Publi\u00e9e' },
+            { value: 'published', label: 'Publiée' },
           ]}
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
@@ -126,16 +126,16 @@ export default function LibraryPage() {
       ) : filtered.length === 0 ? (
         <div className="text-center py-16">
           <Film className="mx-auto text-gray-600 mb-4" size={64} />
-          <h3 className="text-xl font-bold text-white mb-2">Aucune vid\u00e9o</h3>
+          <h3 className="text-xl font-bold text-white mb-2">Aucune vidéo</h3>
           <p className="text-gray-400 mb-6">
             {search || filterStatus
-              ? 'Aucune vid\u00e9o ne correspond \u00e0 vos filtres'
-              : 'Cr\u00e9ez votre premi\u00e8re vid\u00e9o pour la voir ici'}
+              ? 'Aucune vidéo ne correspond à vos filtres'
+              : 'Créez votre première vidéo pour la voir ici'}
           </p>
           {!search && !filterStatus && (
             <Link href="/dashboard/creator">
               <Button variant="primary" size="lg">
-                Cr\u00e9er ma premi\u00e8re vid\u00e9o
+                Créer ma première vidéo
               </Button>
             </Link>
           )}
@@ -172,7 +172,7 @@ export default function LibraryPage() {
                   {video.status === 'completed' && (
                     <div className="flex gap-2 pt-2 border-t border-gray-800">
                       <Button size="sm" variant="secondary" className="flex-1">
-                        <Download size={14} className="mr-1" /> T\u00e9l\u00e9charger
+                        <Download size={14} className="mr-1" /> Télécharger
                       </Button>
                     </div>
                   )}

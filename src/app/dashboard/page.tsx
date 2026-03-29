@@ -70,23 +70,23 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div>
         <h1 className="text-4xl font-bold text-white mb-2">
-          {loading ? 'Chargement...' : `Bienvenue, ${firstName} ð`}
+          {loading ? 'Chargement...' : `Bienvenue, ${firstName} 👋`}
         </h1>
         <p className="text-gray-400">
           {stats.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
-          {' â '}{stats.credits} cr\u00e9dits disponibles
+          {' • '}{stats.credits} crédits disponibles
         </p>
       </div>
 
       <div className="grid md:grid-cols-4 gap-4">
         <StatsCard
           icon={Video}
-          label="Vid\u00e9os cr\u00e9\u00e9es"
+          label="Vidéos créées"
           value={loading ? '...' : stats.totalVideos}
         />
         <StatsCard
           icon={Zap}
-          label="Cr\u00e9dits restants"
+          label="Crédits restants"
           value={loading ? '...' : stats.credits.toLocaleString()}
         />
         <StatsCard
@@ -111,12 +111,12 @@ export default function DashboardPage() {
             <h3 className="font-bold text-white">Actions rapides</h3>
             <Link href="/dashboard/creator" className="block">
               <Button variant="primary" size="lg" className="w-full">
-                Cr\u00e9er une vid\u00e9o
+                Créer une vidéo
               </Button>
             </Link>
             <Link href="/dashboard/social" className="block">
               <Button variant="secondary" size="lg" className="w-full">
-                Connecter r\u00e9seaux sociaux
+                Connecter réseaux sociaux
               </Button>
             </Link>
           </div>

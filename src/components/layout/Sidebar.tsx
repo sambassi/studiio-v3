@@ -7,12 +7,12 @@ import { LayoutDashboard, Zap, Library, Target, Share2, CreditCard, Image, Calen
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard' },
-  { icon: Zap, label: 'Cr\u00e9er', href: '/dashboard/creator' },
+  { icon: Zap, label: 'Créer', href: '/dashboard/creator' },
   { icon: Image, label: 'Infographie', href: '/dashboard/infographie' },
   { icon: Calendar, label: 'Calendrier IA', href: '/dashboard/calendar' },
-  { icon: Library, label: 'Biblioth\u00e8que', href: '/dashboard/library' },
+  { icon: Library, label: 'Bibliothèque', href: '/dashboard/library' },
   { icon: Target, label: 'Objectifs', href: '/dashboard/objectives' },
-  { icon: Share2, label: 'R\u00e9seaux sociaux', href: '/dashboard/social' },
+  { icon: Share2, label: 'Réseaux sociaux', href: '/dashboard/social' },
   { icon: CreditCard, label: 'Facturation', href: '/dashboard/billing' },
 ];
 
@@ -62,7 +62,7 @@ export function Sidebar() {
       </nav>
 
       <div className="absolute bottom-6 left-6 right-6 card-base p-4">
-        <div className="text-xs text-gray-500 mb-2">Cr\u00e9dits disponibles</div>
+        <div className="text-xs text-gray-500 mb-2">Crédits disponibles</div>
         <div className="text-2xl font-bold text-studiio-accent mb-4">
           {credits !== null ? credits.toLocaleString() : '...'}
         </div>
