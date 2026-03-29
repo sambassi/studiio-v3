@@ -285,6 +285,26 @@ export default function InfographiePage() {
     setBatchPhotos(updated);
   };
 
+  // Upload a single file to Supabase via presigned URL (bypasses Vercel 4.5MB limit)
+  const uploadFileToStorage = async (file: File, bucket: string): Promise<string> => {
+    const presignRes = await fetch('/api/upload/presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: file.name, contentType: file.type, bucket }),
+    });
+    const presignData = await presignRes.json();
+    if (!presignData.success) throw new Error(presignData.error || 'Erreur upload');
+
+    const uploadRes = await fetch(presignData.data.signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+    if (!uploadRes.ok) throw new Error(`Upload échoué (${uploadRes.status})`);
+
+    return presignData.data.publicUrl;
+  };
+
   const handleExport = async () => {
     if (!session?.user) return;
 
@@ -294,50 +314,83 @@ export default function InfographiePage() {
     setRenderError(null);
 
     try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('subtitle', subtitle);
-      formData.append('theme', selectedTheme);
-      formData.append('cards', JSON.stringify(cards));
-      formData.append('duration', duration.toString());
-      formData.append('batch', batchMode.toString());
-      formData.append('destination', exportDestination);
-      formData.append('salesPhrase', salesPhrase);
+      // Step 1: Upload files directly to Supabase via presigned URLs
+      let characterUrl: string | null = null;
+      let musicFileUrl: string | null = null;
+      let logoFileUrl: string | null = null;
+      let voixOffUrl: string | null = null;
+      let mixVideoUrl: string | null = null;
 
-      if (photoPersonnage) formData.append('character', photoPersonnage);
-      if (mixVideo) formData.append('mixVideo', mixVideo);
-      if (music) formData.append('music', music);
-      if (voixOff) formData.append('voixOff', voixOff);
-      if (logo) formData.append('logo', logo);
-      if (photoAfficheEnabled && photoAfficheUrl) {
-        formData.append('photoAfficheUrl', photoAfficheUrl);
-        if (photoAfficheFile) formData.append('photoAffiche', photoAfficheFile);
+      if (photoPersonnage) {
+        characterUrl = await uploadFileToStorage(photoPersonnage, 'characters');
+      }
+      setRenderProgress(20);
+      if (music) {
+        musicFileUrl = await uploadFileToStorage(music, 'music');
+      }
+      if (logo) {
+        logoFileUrl = await uploadFileToStorage(logo, 'characters');
+      }
+      if (voixOff) {
+        voixOffUrl = await uploadFileToStorage(voixOff, 'rushes');
+      }
+      if (mixVideo) {
+        mixVideoUrl = await uploadFileToStorage(mixVideo, 'rushes');
+      }
+      setRenderProgress(40);
+
+      // Upload batch photos
+      const batchPhotoUrls: string[] = [];
+      if (batchMode && batchPhotos.length > 0) {
+        for (const photo of batchPhotos) {
+          if (photo) {
+            const url = await uploadFileToStorage(photo, 'characters');
+            batchPhotoUrls.push(url);
+          }
+        }
       }
 
-      // Upload batch photos if in batch mode
-      if (batchMode) {
-        batchPhotos.forEach((photo, i) => {
-          if (photo) formData.append(`batchPhoto_${i}`, photo);
-        });
-      }
-
-      setRenderProgress(30);
+      setRenderProgress(50);
       setRenderStatus('rendering');
 
+      // Step 2: Call API with JSON (URLs only, no files)
       const response = await fetch('/api/infographie', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          subtitle,
+          theme: selectedTheme,
+          cards,
+          duration,
+          batch: batchMode,
+          destination: exportDestination,
+          salesPhrase,
+          characterUrl,
+          musicUrl: musicFileUrl,
+          logoUrl: logoFileUrl,
+          voixOffUrl,
+          mixVideoUrl,
+          photoAfficheUrl: photoAfficheEnabled ? photoAfficheUrl : null,
+          batchPhotos: batchPhotoUrls,
+        }),
       });
 
       setRenderProgress(70);
 
-      const data = await response.json();
+      // Handle non-JSON responses gracefully
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Erreur serveur: ${text.slice(0, 100)}`);
+      }
 
       if (data.success) {
         setRenderProgress(100);
         setRenderStatus('completed');
 
-        // If destination includes calendar, show calendar message
         if (exportDestination === 'calendar' || exportDestination === 'both') {
           setToastMsg(batchMode
             ? '10 infographies ajoutées en brouillon au calendrier !'
@@ -351,12 +404,11 @@ export default function InfographiePage() {
         setRenderStatus('error');
         setRenderError(data.error || 'Erreur lors du rendu');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
       setRenderStatus('error');
-      setRenderError('Erreur réseau');
+      setRenderError(error.message || 'Erreur réseau');
     } finally {
-      // Don't reset rendering if completed - let user see the result
       if (renderStatus === 'error') {
         setRendering(false);
       }
