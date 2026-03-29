@@ -4,9 +4,57 @@ import { auth } from '@/lib/auth/config';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
+// PATCH - Update post (move date, change status, edit fields)
+export async function PATCH(req: NextRequest, { params }: { params: { postId: string } }) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ success: false, error: 'Non autorisé' }, { status: 401 });
+    }
+
+    const postId = params.postId;
+    const body = await req.json();
+
+    // Allowed fields to update
+    const allowedFields = ['scheduled_date', 'scheduled_time', 'status', 'caption', 'platforms', 'media_type'];
+    const updateData: Record<string, any> = {};
+
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ success: false, error: 'Aucun champ à mettre à jour' }, { status: 400 });
+    }
+
+    updateData.updated_at = new Date().toISOString();
+
+    const { data, error } = await supabase
+      .from('posts')
+      .update(updateData)
+      .eq('id', postId)
+      .eq('user_id', session.user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json({ success: false, error: 'Erreur lors de la mise à jour' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (error) {
+    console.error('Error:', error);
+    return NextResponse.json({ success: false, error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+// DELETE - Delete post
 export async function DELETE(req: NextRequest, { params }: { params: { postId: string } }) {
   try {
     const session = await auth();
@@ -65,7 +113,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { postId: s
           .remove([filename]);
       } catch (storageError) {
         console.error('Error deleting media:', storageError);
-        // Don't fail the request if media deletion fails
       }
     }
 

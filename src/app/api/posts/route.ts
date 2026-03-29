@@ -99,8 +99,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Handle media file if present
+    // Handle media file if present, or reuse existing URL (for duplication)
     let mediaUrl: string | null = null;
+    const existingMediaUrl = formData.get('existing_media_url') as string;
+    if (existingMediaUrl) {
+      mediaUrl = existingMediaUrl;
+    }
     try {
       const media = formData.get('media');
       if (media && typeof media === 'object' && 'size' in media && (media as File).size > 0) {

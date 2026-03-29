@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { X, Sparkles, Upload, Loader2 } from 'lucide-react';
+import { X, Sparkles, Upload, Loader2, Image as ImageIcon, Video, Trash2 } from 'lucide-react';
 
 interface PostModalProps {
   isOpen: boolean;
@@ -27,30 +27,44 @@ export function PostModal({
   post: initialPost,
   onSave,
 }: PostModalProps) {
-  const [activeTab, setActiveTab] = useState<'draft' | 'schedule' | 'publish'>('draft');
-  const [caption, setCaption] = useState(initialPost?.caption || '');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(
-    initialPost?.platforms || []
-  );
-  const [media, setMedia] = useState<File | null>(null);
-  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<'video' | 'image'>(
-    initialPost?.media_type || 'image'
-  );
   const formatLocalDate = (date: Date): string => {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
-  const [scheduledDate, setScheduledDate] = useState(
-    initialPost?.scheduled_date ||
-    (selectedDate ? formatLocalDate(selectedDate) : formatLocalDate(new Date()))
-  );
-  const [scheduledTime, setScheduledTime] = useState(initialPost?.scheduled_time || '18:00');
+  const [activeTab, setActiveTab] = useState<'draft' | 'schedule' | 'publish'>('draft');
+  const [caption, setCaption] = useState('');
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
+  const [media, setMedia] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'video' | 'image'>('image');
+  const [scheduledDate, setScheduledDate] = useState('');
+  const [scheduledTime, setScheduledTime] = useState('18:00');
   const [magicInput, setMagicInput] = useState('');
   const [generatingCaption, setGeneratingCaption] = useState(false);
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const mediaInputRef = useRef<HTMLInputElement>(null);
+
+  const isEditing = !!initialPost?.id;
+
+  // Reset form when modal opens / post changes
+  useEffect(() => {
+    if (isOpen) {
+      setCaption(initialPost?.caption || '');
+      setSelectedPlatforms(initialPost?.platforms || []);
+      setMediaType(initialPost?.media_type || 'image');
+      setScheduledDate(
+        initialPost?.scheduled_date ||
+        (selectedDate ? formatLocalDate(selectedDate) : formatLocalDate(new Date()))
+      );
+      setScheduledTime(initialPost?.scheduled_time || '18:00');
+      setActiveTab(initialPost?.status === 'scheduled' ? 'schedule' : 'draft');
+      setMedia(null);
+      setMediaPreview(initialPost?.media_url || null);
+      setErrorMsg(null);
+      setMagicInput('');
+    }
+  }, [isOpen, initialPost, selectedDate]);
 
   if (!isOpen) return null;
 
@@ -65,6 +79,12 @@ export function PostModal({
       reader.onload = (ev) => setMediaPreview(ev.target?.result as string);
       reader.readAsDataURL(file);
     }
+  };
+
+  const removeMedia = () => {
+    setMedia(null);
+    setMediaPreview(null);
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
   };
 
   const togglePlatform = (platformId: string) => {
@@ -123,35 +143,59 @@ export function PostModal({
 
     setSaving(true);
     try {
-      const formData = new FormData();
-      formData.append('caption', caption);
-      formData.append('platforms', JSON.stringify(selectedPlatforms));
-      formData.append('scheduled_date', scheduledDate);
-      formData.append('scheduled_time', scheduledTime);
-      formData.append('status', activeTab === 'draft' ? 'draft' : activeTab === 'schedule' ? 'scheduled' : 'published');
-      formData.append('media_type', mediaType);
+      if (isEditing) {
+        // Update existing post via PATCH
+        const updateData: any = {
+          caption,
+          platforms: selectedPlatforms,
+          scheduled_date: scheduledDate,
+          scheduled_time: scheduledTime,
+          status: activeTab === 'draft' ? 'draft' : activeTab === 'schedule' ? 'scheduled' : 'published',
+        };
 
-      // Use React state first, fallback to DOM input ref
-      if (media) {
-        formData.append('media', media);
-      } else if (mediaInputRef.current?.files?.[0]) {
-        const domFile = mediaInputRef.current.files[0];
-        formData.append('media', domFile);
-        const isVideo = domFile.type.startsWith('video/');
-        formData.append('media_type', isVideo ? 'video' : 'image');
-      }
+        const res = await fetch(`/api/posts/${initialPost.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updateData),
+        });
 
-      const res = await fetch('/api/posts', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        onSave(data.data);
-        onClose();
+        const data = await res.json();
+        if (res.ok && data.success) {
+          onSave(data.data);
+        } else {
+          setErrorMsg(data.error || 'Erreur lors de la mise à jour');
+        }
       } else {
-        setErrorMsg(data.error || 'Erreur lors de la sauvegarde');
+        // Create new post
+        const formData = new FormData();
+        formData.append('caption', caption);
+        formData.append('platforms', JSON.stringify(selectedPlatforms));
+        formData.append('scheduled_date', scheduledDate);
+        formData.append('scheduled_time', scheduledTime);
+        formData.append('status', activeTab === 'draft' ? 'draft' : activeTab === 'schedule' ? 'scheduled' : 'published');
+        formData.append('media_type', mediaType);
+
+        // Use React state first, fallback to DOM input ref
+        if (media) {
+          formData.append('media', media);
+        } else if (mediaInputRef.current?.files?.[0]) {
+          const domFile = mediaInputRef.current.files[0];
+          formData.append('media', domFile);
+          const isVideo = domFile.type.startsWith('video/');
+          formData.append('media_type', isVideo ? 'video' : 'image');
+        }
+
+        const res = await fetch('/api/posts', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          onSave(data.data);
+        } else {
+          setErrorMsg(data.error || 'Erreur lors de la sauvegarde');
+        }
       }
     } catch (error) {
       console.error('Error saving post:', error);
@@ -165,8 +209,10 @@ export function PostModal({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full card-base animate-fade-in max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-800 sticky top-0 bg-gray-900 z-10">
-          <h2 className="text-2xl font-bold text-white">Nouveau Post</h2>
+        <div className="flex justify-between items-center mb-6 pb-4 border-b border-gray-800 sticky top-0 bg-gray-900 z-10 px-6 pt-6">
+          <h2 className="text-2xl font-bold text-white">
+            {isEditing ? 'Modifier le Post' : 'Nouveau Post'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition"
@@ -175,7 +221,7 @@ export function PostModal({
           </button>
         </div>
 
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-6 pt-0">
           {/* Tabs */}
           <div className="flex gap-2 border-b border-gray-800">
             {[
@@ -213,14 +259,14 @@ export function PostModal({
                 <button
                   key={platform.id}
                   onClick={() => togglePlatform(platform.id)}
-                  className={`p-4 rounded-lg border-2 transition ${
+                  className={`p-3 rounded-lg border-2 transition flex items-center gap-2 ${
                     selectedPlatforms.includes(platform.id)
                       ? 'border-pink-500 bg-pink-500/10 text-white'
                       : 'border-gray-700 bg-gray-800 text-gray-400 hover:border-gray-600'
                   }`}
                 >
-                  <span className="text-2xl mr-2">{platform.emoji}</span>
-                  <span className="font-medium">{platform.label}</span>
+                  <span className="text-xl">{platform.emoji}</span>
+                  <span className="font-medium text-sm">{platform.label}</span>
                 </button>
               ))}
             </div>
@@ -229,14 +275,47 @@ export function PostModal({
           {/* Media Upload */}
           <div>
             <h3 className="text-lg font-semibold text-white mb-3">Média</h3>
-            <button
-              onClick={() => mediaInputRef.current?.click()}
-              className="w-full p-6 border-2 border-dashed border-gray-700 rounded-lg text-center hover:border-pink-500 transition text-gray-400"
-            >
-              <Upload className="mx-auto mb-2" size={24} />
-              <p className="font-medium">GLISSE OU CLIQUE POUR AJOUTER UN MÉDIA</p>
-              <p className="text-sm mt-1">MP4, MOV, JPG, PNG, WEBP, GIF</p>
-            </button>
+            {mediaPreview ? (
+              <div className="relative rounded-lg overflow-hidden bg-gray-800 border border-gray-700">
+                <div className="aspect-video flex items-center justify-center bg-black">
+                  {mediaType === 'video' ? (
+                    <video
+                      src={mediaPreview}
+                      controls
+                      muted
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  ) : (
+                    <img
+                      src={mediaPreview}
+                      alt="Preview"
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  )}
+                </div>
+                {!isEditing && (
+                  <button
+                    onClick={removeMedia}
+                    className="absolute top-2 right-2 p-1.5 bg-red-500/80 rounded-full text-white hover:bg-red-600 transition"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+                <div className="p-2 text-xs text-gray-400 flex items-center gap-2">
+                  {mediaType === 'video' ? <Video size={12} /> : <ImageIcon size={12} />}
+                  {media?.name || 'Média existant'}
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => mediaInputRef.current?.click()}
+                className="w-full p-6 border-2 border-dashed border-gray-700 rounded-lg text-center hover:border-pink-500 transition text-gray-400"
+              >
+                <Upload className="mx-auto mb-2" size={24} />
+                <p className="font-medium">GLISSE OU CLIQUE POUR AJOUTER UN MÉDIA</p>
+                <p className="text-sm mt-1">MP4, MOV, JPG, PNG, WEBP, GIF</p>
+              </button>
+            )}
             <input
               ref={mediaInputRef}
               type="file"
@@ -244,11 +323,6 @@ export function PostModal({
               onChange={handleMediaChange}
               className="hidden"
             />
-            {media && (
-              <div className="mt-3 p-3 bg-gray-800 rounded-lg text-sm text-gray-400">
-                Fichier sélectionné: {media.name}
-              </div>
-            )}
           </div>
 
           {/* Date & Time */}
@@ -338,10 +412,10 @@ export function PostModal({
             {saving ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                Sauvegarde...
+                {isEditing ? 'Mise à jour...' : 'Sauvegarde...'}
               </>
             ) : (
-              'Sauvegarder le post'
+              isEditing ? 'Mettre à jour le post' : 'Sauvegarder le post'
             )}
           </Button>
         </div>

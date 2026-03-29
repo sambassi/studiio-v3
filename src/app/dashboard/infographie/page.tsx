@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Card, CardContent } from '@/components/ui/Card';
 import {
   Upload, X, Settings, Plus, Trash2, Music, Zap, Heart, Wifi, Clock,
-  Image as ImageIcon, Loader2
+  Image as ImageIcon, Loader2, Mic, Volume2, Type, Sparkles, CheckCircle
 } from 'lucide-react';
 
 interface InfoCard {
@@ -16,7 +16,31 @@ interface InfoCard {
   label: string;
   value: string;
   color: string;
+  salesPhrase?: string;
 }
+
+type VoiceMode = 'off' | 'edge' | 'upload';
+
+const EDGE_VOICES = [
+  { id: 'fr-FR-DeniseNeural', label: 'Denise (Femme)' },
+  { id: 'fr-FR-HenriNeural', label: 'Henri (Homme)' },
+  { id: 'fr-FR-CoralieNeural', label: 'Coralie (Femme)' },
+  { id: 'fr-FR-RemyMultilingualNeural', label: 'Rémy (Homme)' },
+  { id: 'fr-FR-VivienneMultilingualNeural', label: 'Vivienne (Femme)' },
+];
+
+const SALES_PHRASES = [
+  'Réserve ta place maintenant !',
+  'Offre limitée cette semaine',
+  'Premier cours GRATUIT',
+  'Rejoins la communauté',
+  '-50% sur ton abonnement',
+  'Essai gratuit 7 jours',
+  'Booste ton énergie !',
+  'Transforme ton corps',
+  'Résultats garantis',
+  'Inscription ouverte',
+];
 
 const THEMES = [
   { id: 'sommeil-sport', label: 'Sommeil & Sport' },
@@ -51,6 +75,17 @@ export default function InfographiePage() {
   const [duration, setDuration] = useState(30);
   const [rendering, setRendering] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [salesPhrase, setSalesPhrase] = useState('');
+
+  // Voix off state
+  const [voiceMode, setVoiceMode] = useState<VoiceMode>('off');
+  const [selectedVoice, setSelectedVoice] = useState(EDGE_VOICES[0].id);
+  const [voiceText, setVoiceText] = useState('');
+  const [generatingVoice, setGeneratingVoice] = useState(false);
+  const [voiceGenerated, setVoiceGenerated] = useState(false);
+
+  // Batch photos
+  const [batchPhotos, setBatchPhotos] = useState<(File | null)[]>(Array(10).fill(null));
   const photoInputRef = useRef<HTMLInputElement>(null);
   const mixVideoInputRef = useRef<HTMLInputElement>(null);
   const musicInputRef = useRef<HTMLInputElement>(null);
@@ -92,6 +127,37 @@ export default function InfographiePage() {
       value: '0',
       color: '#ff1493',
     }]);
+  };
+
+  const generateVoiceOver = async () => {
+    if (!voiceText.trim()) return;
+    setGeneratingVoice(true);
+    try {
+      const res = await fetch('/api/tts/edge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: voiceText, voice: selectedVoice }),
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const file = new File([blob], 'voix-off-infographie.mp3', { type: 'audio/mpeg' });
+        setVoixOff(file);
+        setVoiceGenerated(true);
+      } else {
+        setToastMsg('Service TTS indisponible - utilisez upload');
+        setTimeout(() => setToastMsg(null), 4000);
+      }
+    } catch (error) {
+      console.error('TTS error:', error);
+    } finally {
+      setGeneratingVoice(false);
+    }
+  };
+
+  const handleBatchPhotoUpload = (index: number, file: File) => {
+    const updated = [...batchPhotos];
+    updated[index] = file;
+    setBatchPhotos(updated);
   };
 
   const handleExport = async () => {
@@ -268,6 +334,77 @@ export default function InfographiePage() {
               </CardContent>
             </Card>
 
+            {/* Phrase de vente courte */}
+            <Card className="card-base border border-gray-700">
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Type size={18} className="text-pink-400" /> Phrase de vente
+                </h3>
+                <Input
+                  value={salesPhrase}
+                  onChange={(e) => setSalesPhrase(e.target.value)}
+                  placeholder="Ex: Réserve ta place maintenant !"
+                  className="bg-gray-800 border-gray-700 text-white mb-3"
+                />
+                <div className="flex flex-wrap gap-2">
+                  {SALES_PHRASES.map((phrase, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSalesPhrase(phrase)}
+                      className={`px-3 py-1.5 rounded-full text-xs transition ${
+                        salesPhrase === phrase
+                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500'
+                          : 'bg-gray-800 text-gray-400 border border-gray-700 hover:border-gray-600'
+                      }`}
+                    >
+                      {phrase}
+                    </button>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Batch photos (different per video) */}
+            {batchMode && (
+              <Card className="card-base border border-gray-700">
+                <CardContent className="p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <ImageIcon size={18} className="text-purple-400" /> Photos par vidéo (Batch)
+                  </h3>
+                  <p className="text-sm text-gray-400 mb-4">Chaque vidéo peut avoir une photo de personnage différente</p>
+                  <div className="grid grid-cols-5 gap-2">
+                    {Array.from({ length: 10 }, (_, i) => (
+                      <label key={i} className="aspect-square bg-gray-800 rounded-lg border border-gray-700 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition overflow-hidden">
+                        {batchPhotos[i] ? (
+                          <div className="w-full h-full relative">
+                            <img
+                              src={URL.createObjectURL(batchPhotos[i]!)}
+                              className="w-full h-full object-cover"
+                              alt=""
+                            />
+                            <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-center text-[8px] text-white py-0.5">
+                              #{i + 1}
+                            </span>
+                          </div>
+                        ) : (
+                          <>
+                            <Upload size={12} className="text-gray-500" />
+                            <span className="text-[8px] text-gray-500 mt-0.5">#{i + 1}</span>
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={e => e.target.files?.[0] && handleBatchPhotoUpload(i, e.target.files[0])}
+                        />
+                      </label>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Photo Personnage */}
             <Card className="card-base border border-gray-700">
               <CardContent className="p-6">
@@ -328,17 +465,32 @@ export default function InfographiePage() {
 
                     <div className="space-y-2 text-xs">
                       {cards.slice(0, 3).map(card => (
-                        <div key={card.id} className="flex items-center gap-2 p-2 bg-gray-700/50 rounded">
+                        <div key={card.id} className="flex items-center gap-2 p-2 rounded"
+                          style={{ backgroundColor: card.color + '20', borderLeft: `3px solid ${card.color}` }}>
                           <span>{card.icon}</span>
-                          <span className="text-pink-400">{card.label}</span>
-                          <span className="text-green-400 ml-auto">{card.value}</span>
+                          <span style={{ color: card.color }}>{card.label}</span>
+                          <span className="text-white ml-auto font-bold">{card.value}</span>
                         </div>
                       ))}
                     </div>
 
+                    {salesPhrase && (
+                      <div className="text-center py-1">
+                        <span className="text-yellow-400 text-xs font-bold">{salesPhrase}</span>
+                      </div>
+                    )}
+
                     <button className="w-full py-2 bg-gradient-to-r from-pink-500 to-purple-600 rounded font-semibold text-sm">
                       EN SAVOIR PLUS
                     </button>
+
+                    {voiceMode !== 'off' && (
+                      <div className="text-center">
+                        <span className="text-[10px] text-blue-300 flex items-center justify-center gap-1">
+                          <Mic size={8} /> Voix off activée
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -387,21 +539,77 @@ export default function InfographiePage() {
                     />
                   </div>
 
+                  {/* Voix off section with Edge TTS / Upload choice */}
                   <div>
-                    <label className="block text-sm text-gray-400 mb-2">Voix Off</label>
-                    <button
-                      onClick={() => voixOffInputRef.current?.click()}
-                      className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-gray-300 text-sm transition"
-                    >
-                      {voixOff ? '✓ ' + voixOff.name : 'Ajouter une voix off'}
-                    </button>
-                    <input
-                      ref={voixOffInputRef}
-                      type="file"
-                      accept="audio/*"
-                      onChange={handleFileUpload(setVoixOff)}
-                      className="hidden"
-                    />
+                    <label className="block text-sm text-gray-400 mb-2 flex items-center gap-2">
+                      <Mic size={14} /> Voix Off
+                    </label>
+                    <div className="flex gap-1 mb-2">
+                      {([
+                        { id: 'off' as VoiceMode, label: 'Aucune' },
+                        { id: 'edge' as VoiceMode, label: 'Edge TTS' },
+                        { id: 'upload' as VoiceMode, label: 'Upload' },
+                      ]).map(v => (
+                        <button
+                          key={v.id}
+                          onClick={() => setVoiceMode(v.id)}
+                          className={`flex-1 p-1.5 rounded text-xs transition ${voiceMode === v.id ? 'bg-purple-500/20 text-purple-300 border border-purple-500' : 'bg-gray-800 text-gray-400 border border-gray-700'}`}
+                        >
+                          {v.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {voiceMode === 'edge' && (
+                      <div className="space-y-2">
+                        <select
+                          value={selectedVoice}
+                          onChange={e => setSelectedVoice(e.target.value)}
+                          className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-xs"
+                        >
+                          {EDGE_VOICES.map(v => (
+                            <option key={v.id} value={v.id}>{v.label}</option>
+                          ))}
+                        </select>
+                        <textarea
+                          value={voiceText}
+                          onChange={e => setVoiceText(e.target.value)}
+                          placeholder="Texte à lire..."
+                          className="w-full px-2 py-1.5 bg-gray-800 border border-gray-700 rounded text-white text-xs resize-none h-14"
+                        />
+                        <button
+                          onClick={generateVoiceOver}
+                          disabled={generatingVoice || !voiceText.trim()}
+                          className="w-full px-3 py-1.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 rounded text-white text-xs flex items-center justify-center gap-1"
+                        >
+                          {generatingVoice ? <Loader2 size={12} className="animate-spin" /> : <Volume2 size={12} />}
+                          {voiceGenerated ? 'Régénérer' : 'Générer'}
+                        </button>
+                        {voiceGenerated && (
+                          <div className="flex items-center gap-1 text-green-400 text-xs">
+                            <CheckCircle size={10} /> Voix off générée
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {voiceMode === 'upload' && (
+                      <>
+                        <button
+                          onClick={() => voixOffInputRef.current?.click()}
+                          className="w-full px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded text-gray-300 text-sm transition"
+                        >
+                          {voixOff ? '✓ ' + voixOff.name : 'Ajouter une voix off'}
+                        </button>
+                        <input
+                          ref={voixOffInputRef}
+                          type="file"
+                          accept="audio/*"
+                          onChange={handleFileUpload(setVoixOff)}
+                          className="hidden"
+                        />
+                      </>
+                    )}
                   </div>
 
                   <div>
