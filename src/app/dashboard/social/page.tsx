@@ -22,10 +22,19 @@ const PLATFORMS = [
   { id: 'youtube', name: 'YouTube', icon: Youtube, color: 'text-red-400', description: 'Shorts, vidéos longues' },
 ];
 
+interface Toast {
+  id: string;
+  message: string;
+}
+
 export default function SocialPage() {
   const [accounts, setAccounts] = useState<SocialAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [multiNetworkPublish, setMultiNetworkPublish] = useState(true);
+  const [smartScheduling, setSmartScheduling] = useState(false);
+  const [aiCaptions, setAiCaptions] = useState(true);
 
   useEffect(() => {
     async function fetchAccounts() {
@@ -48,10 +57,19 @@ export default function SocialPage() {
     return accounts.find(a => a.platform === platformId && a.connected);
   };
 
+  const showToast = (message: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  };
+
   const handleConnect = async (platformId: string) => {
     setConnecting(platformId);
-    // In production: redirect to OAuth flow for the platform
-    // For now, show coming soon behavior
+    const platform = PLATFORMS.find(p => p.id === platformId);
+    const platformName = platform?.name || 'cette plateforme';
+    showToast(`L'intégration OAuth avec ${platformName} sera disponible prochainement. Pour l'instant, vous pouvez planifier vos posts depuis le Calendrier IA.`);
     setTimeout(() => {
       setConnecting(null);
     }, 2000);
@@ -154,21 +172,36 @@ export default function SocialPage() {
         <CardContent className="pt-6">
           <div className="space-y-4">
             <label className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-xl cursor-pointer hover:bg-gray-800 transition">
-              <input type="checkbox" className="w-4 h-4 accent-studiio-primary" defaultChecked />
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-studiio-primary"
+                checked={multiNetworkPublish}
+                onChange={(e) => setMultiNetworkPublish(e.target.checked)}
+              />
               <div>
                 <p className="font-medium text-white text-sm">Publication multi-réseaux</p>
                 <p className="text-xs text-gray-400">Publiez automatiquement sur tous vos comptes connectés</p>
               </div>
             </label>
             <label className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-xl cursor-pointer hover:bg-gray-800 transition">
-              <input type="checkbox" className="w-4 h-4 accent-studiio-primary" />
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-studiio-primary"
+                checked={smartScheduling}
+                onChange={(e) => setSmartScheduling(e.target.checked)}
+              />
               <div>
                 <p className="font-medium text-white text-sm">Programmation intelligente</p>
                 <p className="text-xs text-gray-400">L&apos;IA choisit l&apos;heure optimale de publication</p>
               </div>
             </label>
             <label className="flex items-center gap-3 p-4 bg-gray-800/50 rounded-xl cursor-pointer hover:bg-gray-800 transition">
-              <input type="checkbox" className="w-4 h-4 accent-studiio-primary" defaultChecked />
+              <input
+                type="checkbox"
+                className="w-4 h-4 accent-studiio-primary"
+                checked={aiCaptions}
+                onChange={(e) => setAiCaptions(e.target.checked)}
+              />
               <div>
                 <p className="font-medium text-white text-sm">Légendes IA</p>
                 <p className="text-xs text-gray-400">Générez des légendes et hashtags adaptés à chaque plateforme</p>
@@ -178,21 +211,16 @@ export default function SocialPage() {
         </CardContent>
       </Card>
 
-      {/* Info banner */}
-      <Card className="border-yellow-500/20 bg-yellow-500/5">
-        <CardContent className="pt-6">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="text-yellow-500 mt-0.5 flex-shrink-0" size={20} />
-            <div>
-              <p className="text-white font-semibold text-sm">Publication en cours de développement</p>
-              <p className="text-xs text-gray-400 mt-1">
-                La publication automatique sera bientôt disponible. Vous pourrez publier directement vos vidéos
-                sur Instagram, TikTok, Facebook et YouTube depuis Studiio.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Toast notifications */}
+      <div className="fixed bottom-4 right-4 space-y-2 z-50">
+        {toasts.map(toast => (
+          <Card key={toast.id} className="border-studiio-primary/50 bg-gray-900/95 backdrop-blur max-w-sm">
+            <CardContent className="pt-4">
+              <p className="text-sm text-gray-200">{toast.message}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

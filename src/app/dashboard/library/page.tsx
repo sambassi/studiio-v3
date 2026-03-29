@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { Play, Trash2, Download, Film, Loader2 } from 'lucide-react';
+import { Play, Trash2, Download, Film, Loader2, X } from 'lucide-react';
 import Link from 'next/link';
 
 interface Video {
@@ -29,6 +29,8 @@ export default function LibraryPage() {
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [total, setTotal] = useState(0);
+  const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
+  const [toastMessage, setToastMessage] = useState('');
 
   useEffect(() => {
     async function fetchVideos() {
@@ -80,6 +82,22 @@ export default function LibraryPage() {
       case 'rendering': return 'warning' as const;
       case 'published': return 'success' as const;
       default: return 'default' as const;
+    }
+  };
+
+  const handleDownload = (video: Video) => {
+    if (video.metadata?.outputUrl) {
+      window.open(video.metadata.outputUrl, '_blank');
+    } else {
+      setToastMessage('URL de téléchargement non disponible');
+      setTimeout(() => setToastMessage(''), 3000);
+    }
+  };
+
+  const handleDelete = (video: Video) => {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer "${video.title}" ?`)) {
+      // TODO: Implement delete API call
+      setVideos(prev => prev.filter(v => v.id !== video.id));
     }
   };
 
@@ -158,7 +176,7 @@ export default function LibraryPage() {
                   <div>
                     <p className="font-semibold text-white text-sm truncate">{video.title}</p>
                     <p className="text-xs text-gray-400">
-                      {video.format === 'reel' ? 'Reel 9:16' : 'TV 16:9'} \u2022 {formatDate(video.created_at)}
+                      {video.format === 'reel' ? 'Reel 9:16' : 'TV 16:9'} • {formatDate(video.created_at)}
                     </p>
                   </div>
                   <div className="flex justify-between items-center">
@@ -169,13 +187,34 @@ export default function LibraryPage() {
                       <span className="text-xs text-gray-500 capitalize">{video.metadata.objective}</span>
                     )}
                   </div>
-                  {video.status === 'completed' && (
-                    <div className="flex gap-2 pt-2 border-t border-gray-800">
-                      <Button size="sm" variant="secondary" className="flex-1">
-                        <Download size={14} className="mr-1" /> Télécharger
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex gap-2 pt-2 border-t border-gray-800">
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      className="flex-1"
+                      onClick={() => setSelectedVideo(video)}
+                    >
+                      <Play size={14} className="mr-1" /> Aperçu
+                    </Button>
+                    {video.status === 'completed' && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleDownload(video)}
+                        >
+                          <Download size={14} />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleDelete(video)}
+                        >
+                          <Trash2 size={14} />
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -189,6 +228,59 @@ export default function LibraryPage() {
             </div>
           )}
         </>
+      )}
+
+      {selectedVideo && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-900 rounded-lg max-w-md w-full border border-gray-800">
+            <div className="flex justify-between items-center p-6 border-b border-gray-800">
+              <h2 className="text-xl font-semibold text-white">Détails de la vidéo</h2>
+              <button
+                onClick={() => setSelectedVideo(null)}
+                className="text-gray-400 hover:text-white transition"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Titre</p>
+                <p className="text-white font-medium">{selectedVideo.title}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Format</p>
+                <p className="text-white">{selectedVideo.format === 'reel' ? 'Reel 9:16' : 'TV 16:9'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Statut</p>
+                <Badge variant={getStatusVariant(selectedVideo.status)}>
+                  {getStatusLabel(selectedVideo.status)}
+                </Badge>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 mb-1">Date</p>
+                <p className="text-white">{formatDate(selectedVideo.created_at)}</p>
+              </div>
+              {selectedVideo.metadata?.objective && (
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">Objectif</p>
+                  <p className="text-white capitalize">{selectedVideo.metadata.objective}</p>
+                </div>
+              )}
+            </div>
+            <div className="p-6 border-t border-gray-800">
+              <Button variant="primary" className="w-full" onClick={() => setSelectedVideo(null)}>
+                Fermer
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toastMessage && (
+        <div className="fixed bottom-4 right-4 bg-orange-500 text-white px-6 py-3 rounded-lg z-50">
+          {toastMessage}
+        </div>
       )}
     </div>
   );

@@ -28,7 +28,7 @@ interface TimelineItem {
 }
 
 type VideoFormat = 'reel' | 'tv';
-type VideoMode = 'cardio' | 'temoignage';
+type VideoMode = 'cardio' | 'témoignage';
 type Objective = 'promotion' | 'abonnement' | 'motivation' | 'bienfaits' | 'nutrition';
 
 const OBJECTIVES = [
@@ -266,11 +266,11 @@ export default function CreatorPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Creer une video</h1>
-          <p className="text-gray-400 text-sm mt-1">Etape {step} sur 4</p>
+          <h1 className="text-2xl font-bold text-white">Créer une vidéo</h1>
+          <p className="text-gray-400 text-sm mt-1">Étape {step} sur 4</p>
         </div>
         <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-400">{credits} credits</span>
+          <span className="text-sm text-gray-400">{credits} crédits</span>
           <div className="flex gap-1">
             {[1, 2, 3, 4].map(s => (
               <div key={s} className={`w-8 h-1 rounded-full ${s <= step ? 'bg-purple-500' : 'bg-gray-700'}`} />
@@ -302,7 +302,7 @@ export default function CreatorPage() {
             <CardHeader><CardTitle>Mode</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                {(['cardio', 'temoignage'] as const).map(m => (
+                {(['cardio', 'témoignage'] as const).map(m => (
                   <button key={m} onClick={() => setMode(m)}
                     className={`p-4 rounded-lg border-2 text-left transition ${mode === m ? 'border-purple-500 bg-purple-500/10' : 'border-gray-700 hover:border-gray-600'}`}>
                     <div className="text-white font-medium capitalize">{m}</div>
@@ -502,17 +502,17 @@ export default function CreatorPage() {
         <div className="space-y-6">
           {/* Recap */}
           <Card>
-            <CardHeader><CardTitle>Recap</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Récapitulatif</CardTitle></CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div><span className="text-gray-400">Titre:</span> <span className="text-white ml-2">{title}</span></div>
                 <div><span className="text-gray-400">Format:</span> <span className="text-white ml-2">{format === 'reel' ? 'Reel 9:16' : 'TV 16:9'}</span></div>
                 <div><span className="text-gray-400">Mode:</span> <span className="text-white ml-2 capitalize">{mode}</span></div>
-                <div><span className="text-gray-400">Duree:</span> <span className="text-white ml-2">{totalDuration}s</span></div>
+                <div><span className="text-gray-400">Durée:</span> <span className="text-white ml-2">{totalDuration}s</span></div>
                 <div><span className="text-gray-400">Rush:</span> <span className="text-white ml-2">{rushSlots.filter(s => s.file).length} videos</span></div>
                 <div><span className="text-gray-400">Musique:</span> <span className="text-white ml-2">{musicFile ? musicFile.name : 'Aucune'}</span></div>
                 <div><span className="text-gray-400">Objectifs:</span> <span className="text-white ml-2">{selectedObjectives.join(', ')}</span></div>
-                <div><span className="text-gray-400">Credits:</span> <span className="text-white ml-2">{renderCost} credits</span></div>
+                <div><span className="text-gray-400">Crédits:</span> <span className="text-white ml-2">{renderCost} crédits</span></div>
               </div>
             </CardContent>
           </Card>
@@ -523,10 +523,10 @@ export default function CreatorPage() {
               <CardContent className="pt-6">
                 <div className="text-center space-y-4">
                   <CheckCircle className="w-16 h-16 text-green-400 mx-auto" />
-                  <h3 className="text-xl font-bold text-white">Video terminee !</h3>
-                  <p className="text-gray-400">Votre video a ete rendue avec succes.</p>
+                  <h3 className="text-xl font-bold text-white">Vidéo terminée !</h3>
+                  <p className="text-gray-400">Votre vidéo a été rendue avec succès.</p>
                   <a href="/dashboard/library" className="inline-block px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
-                    Voir dans la bibliotheque
+                    Voir dans la bibliothèque
                   </a>
                 </div>
               </CardContent>
@@ -538,7 +538,7 @@ export default function CreatorPage() {
                   <AlertCircle className="w-16 h-16 text-red-400 mx-auto" />
                   <h3 className="text-xl font-bold text-white">Erreur de rendu</h3>
                   <p className="text-red-300">{renderError}</p>
-                  <Button onClick={() => { setRenderError(null); setRendering(false); }}>Reessayer</Button>
+                  <Button onClick={() => { setRenderError(null); setRendering(false); }}>Réessayer</Button>
                 </div>
               </CardContent>
             </Card>

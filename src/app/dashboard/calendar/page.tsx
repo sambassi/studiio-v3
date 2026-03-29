@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
-import { ChevronLeft, ChevronRight, Bot, Upload, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Bot, Upload, Plus, Trash2, AlertCircle } from 'lucide-react';
 import { PostModal } from '@/components/calendar/PostModal';
 import { AgentIAModal } from '@/components/calendar/AgentIAModal';
 
@@ -20,6 +20,11 @@ interface Post {
 
 const DAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
 
+interface Toast {
+  id: string;
+  message: string;
+}
+
 export default function CalendarPage() {
   const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -28,6 +33,9 @@ export default function CalendarPage() {
   const [showPostModal, setShowPostModal] = useState(false);
   const [showAgentModal, setShowAgentModal] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   // Fetch posts on mount and when month changes
   useEffect(() => {
@@ -86,6 +94,32 @@ export default function CalendarPage() {
   const handlePostSave = (post: Partial<Post>) => {
     fetchPosts();
     setShowPostModal(false);
+  };
+
+  const showToast = (message: string) => {
+    const id = Math.random().toString(36).substr(2, 9);
+    setToasts(prev => [...prev, { id, message }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 4000);
+  };
+
+  const handleImport = () => {
+    showToast('Import CSV bientôt disponible');
+  };
+
+  const handleDeletePost = async (postId: string) => {
+    try {
+      const res = await fetch(`/api/posts/${postId}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchPosts();
+        showToast('Post supprimé avec succès');
+        setDeleteConfirm(null);
+      }
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      showToast('Erreur lors de la suppression');
+    }
   };
 
   const isToday = (day: number): boolean => {
@@ -200,7 +234,7 @@ export default function CalendarPage() {
                     <Bot size={18} /> Agent IA
                   </Button>
                   <Button
-                    onClick={() => {}}
+                    onClick={handleImport}
                     variant="secondary"
                     className="flex items-center gap-2"
                   >
@@ -238,30 +272,74 @@ export default function CalendarPage() {
                 ) : (
                   <div className="space-y-4">
                     {selectedDayPosts.map(post => (
-                      <div key={post.id} className="p-4 bg-gray-800 rounded-lg">
-                        <p className="text-sm text-gray-300 mb-2">{post.caption.substring(0, 50)}...</p>
-                        <div className="flex flex-wrap gap-2 mb-3">
-                          {post.platforms.map(platform => (
-                            <span
-                              key={platform}
-                              className="px-2 py-1 bg-gray-700 text-xs text-gray-300 rounded"
-                            >
-                              {platform}
+                      <div
+                        key={post.id}
+                        className={`p-4 bg-gray-800 rounded-lg cursor-pointer transition hover:bg-gray-700 ${
+                          selectedPost?.id === post.id ? 'ring-2 ring-studiio-primary' : ''
+                        }`}
+                      >
+                        <div
+                          onClick={() => setSelectedPost(selectedPost?.id === post.id ? null : post)}
+                          className="mb-3"
+                        >
+                          <p className="text-sm text-gray-300 mb-2">{post.caption.substring(0, 50)}...</p>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {post.platforms.map(platform => (
+                              <span
+                                key={platform}
+                                className="px-2 py-1 bg-gray-700 text-xs text-gray-300 rounded"
+                              >
+                                {platform}
+                              </span>
+                            ))}
+                          </div>
+                          <div className="flex justify-between items-center text-xs text-gray-500">
+                            <span>{post.scheduled_time}</span>
+                            <span className={
+                              post.status === 'published'
+                                ? 'text-green-400'
+                                : post.status === 'scheduled'
+                                ? 'text-blue-400'
+                                : 'text-gray-400'
+                            }>
+                              {post.status}
                             </span>
-                          ))}
+                          </div>
                         </div>
-                        <div className="flex justify-between items-center text-xs text-gray-500">
-                          <span>{post.scheduled_time}</span>
-                          <span className={
-                            post.status === 'published'
-                              ? 'text-green-400'
-                              : post.status === 'scheduled'
-                              ? 'text-blue-400'
-                              : 'text-gray-400'
-                          }>
-                            {post.status}
-                          </span>
-                        </div>
+
+                        {selectedPost?.id === post.id && (
+                          <div className="border-t border-gray-700 pt-3 mt-3 space-y-2">
+                            {deleteConfirm === post.id ? (
+                              <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
+                                <p className="text-xs text-gray-300 mb-2">Confirmer la suppression ?</p>
+                                <div className="flex gap-2">
+                                  <Button
+                                    onClick={() => handleDeletePost(post.id)}
+                                    variant="ghost"
+                                    className="flex-1 text-red-400 hover:text-red-300 text-xs h-8"
+                                  >
+                                    Supprimer
+                                  </Button>
+                                  <Button
+                                    onClick={() => setDeleteConfirm(null)}
+                                    variant="ghost"
+                                    className="flex-1 text-gray-400 text-xs h-8"
+                                  >
+                                    Annuler
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : (
+                              <Button
+                                onClick={() => setDeleteConfirm(post.id)}
+                                variant="ghost"
+                                className="w-full text-red-400 hover:text-red-300 text-xs h-8 flex items-center justify-center gap-2"
+                              >
+                                <Trash2 size={14} /> Supprimer
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -287,6 +365,17 @@ export default function CalendarPage() {
           setShowAgentModal(false);
         }}
       />
+
+      {/* Toast notifications */}
+      <div className="fixed bottom-4 right-4 space-y-2 z-50">
+        {toasts.map(toast => (
+          <Card key={toast.id} className="border-studiio-primary/50 bg-gray-900/95 backdrop-blur max-w-sm">
+            <CardContent className="pt-4">
+              <p className="text-sm text-gray-200">{toast.message}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

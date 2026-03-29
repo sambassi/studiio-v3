@@ -22,6 +22,7 @@ export default function ObjectivesPage() {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: '', description: '', target_audience: '', platform: '', tone: ''
   });
@@ -48,25 +49,35 @@ export default function ObjectivesPage() {
     setSaving(true);
 
     try {
-      const res = await fetch('/api/user/objectives', {
-        method: 'POST',
+      const method = editingId ? 'PUT' : 'POST';
+      const url = editingId ? `/api/user/objectives?id=${editingId}` : '/api/user/objectives';
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData),
       });
       const data = await res.json();
       if (data.success) {
-        setObjectives(prev => [data.data, ...prev]);
+        if (editingId) {
+          setObjectives(prev => prev.map(o => o.id === editingId ? data.data : o));
+        } else {
+          setObjectives(prev => [data.data, ...prev]);
+        }
         setFormData({ name: '', description: '', target_audience: '', platform: '', tone: '' });
         setShowForm(false);
+        setEditingId(null);
       }
     } catch (error) {
-      console.error('Error creating objective:', error);
+      console.error('Error saving objective:', error);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (id: string, name: string) => {
+    if (!window.confirm(`Êtes-vous sûr de vouloir supprimer l'objectif "${name}" ?`)) {
+      return;
+    }
     try {
       const res = await fetch(`/api/user/objectives?id=${id}`, { method: 'DELETE' });
       const data = await res.json();
@@ -78,6 +89,24 @@ export default function ObjectivesPage() {
     }
   };
 
+  const handleEdit = (objective: Objective) => {
+    setEditingId(objective.id);
+    setFormData({
+      name: objective.name,
+      description: objective.description,
+      target_audience: objective.target_audience,
+      platform: objective.platform,
+      tone: objective.tone,
+    });
+    setShowForm(true);
+  };
+
+  const handleCancel = () => {
+    setShowForm(false);
+    setEditingId(null);
+    setFormData({ name: '', description: '', target_audience: '', platform: '', tone: '' });
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex justify-between items-start">
@@ -85,7 +114,7 @@ export default function ObjectivesPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Objectifs</h1>
           <p className="text-gray-400">Définissez vos objectifs de création vidéo</p>
         </div>
-        <Button variant="primary" onClick={() => setShowForm(!showForm)}>
+        <Button variant="primary" onClick={() => handleCancel()}>
           {showForm ? 'Annuler' : '+ Créer un objectif'}
         </Button>
       </div>
@@ -93,7 +122,7 @@ export default function ObjectivesPage() {
       {showForm && (
         <Card className="border-studiio-primary/30">
           <CardHeader className="border-b border-gray-800">
-            <CardTitle>Nouvel objectif</CardTitle>
+            <CardTitle>{editingId ? 'Modifier l\'objectif' : 'Nouvel objectif'}</CardTitle>
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="pt-6 space-y-4">
@@ -142,7 +171,11 @@ export default function ObjectivesPage() {
             </CardContent>
             <CardFooter>
               <Button variant="primary" type="submit" disabled={saving}>
-                {saving ? <><Loader2 size={16} className="animate-spin mr-2 inline" /> Création...</> : 'Créer'}
+                {saving ? (
+                  <><Loader2 size={16} className="animate-spin mr-2 inline" /> {editingId ? 'Modification...' : 'Création...'}</>
+                ) : (
+                  editingId ? 'Modifier' : 'Créer'
+                )}
               </Button>
             </CardFooter>
           </form>
@@ -194,7 +227,10 @@ export default function ObjectivesPage() {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button size="sm" variant="secondary" onClick={() => handleDelete(objective.id)}>
+                    <Button size="sm" variant="secondary" onClick={() => handleEdit(objective)}>
+                      <Edit2 size={16} />
+                    </Button>
+                    <Button size="sm" variant="secondary" onClick={() => handleDelete(objective.id, objective.name)}>
                       <Trash2 size={16} />
                     </Button>
                   </div>
