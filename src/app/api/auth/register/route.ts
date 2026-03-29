@@ -49,11 +49,9 @@ export async function POST(req: NextRequest) {
     // Determine special account handling
     let credits = FREE_CREDITS;
     let role = 'user';
-    let plan = 'free';
 
     if (email === 'bassicustomshoes@gmail.com') {
       credits = 999999;
-      plan = 'free';
     } else if (email === 'contact.artboost@gmail.com') {
       credits = 999999;
       role = 'admin';
@@ -69,7 +67,6 @@ export async function POST(req: NextRequest) {
         password_hash: passwordHash,
         credits,
         role,
-        plan,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

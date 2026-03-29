@@ -6,7 +6,7 @@ export interface User {
   created_at: string;
   updated_at: string;
   credits: number;
-  plan: 'free' | 'starter' | 'pro' | 'enterprise';
+  image?: string;
   role: 'user' | 'admin';
 }
 

@@ -14,7 +14,7 @@ interface DashboardStats {
   credits: number;
   totalPublications: number;
   totalViews: number;
-  plan: string;
+  role: string;
   userName: string;
 }
 
@@ -25,7 +25,7 @@ export default function DashboardPage() {
     credits: 0,
     totalPublications: 0,
     totalViews: 0,
-    plan: 'starter',
+    role: 'user',
     userName: '',
   });
   const [loading, setLoading] = useState(true);
@@ -49,7 +49,7 @@ export default function DashboardPage() {
           credits: creditsData.data?.credits || 0,
           totalPublications: 0,
           totalViews: 0,
-          plan: profileData.data?.plan || 'starter',
+          role: profileData.data?.role || 'user',
           userName: profileData.data?.name || session?.user?.name || 'Utilisateur',
         });
       } catch (error) {
@@ -73,7 +73,7 @@ export default function DashboardPage() {
           {loading ? 'Chargement...' : `Bienvenue, ${firstName} ð`}
         </h1>
         <p className="text-gray-400">
-          {stats.plan === 'starter' ? 'Plan Starter' : stats.plan === 'pro' ? 'Plan Pro' : 'Plan Enterprise'}
+          {stats.role === 'admin' ? 'Administrateur' : 'Utilisateur'}
           {' â '}{stats.credits} cr\u00e9dits disponibles
         </p>
       </div>
@@ -106,7 +106,7 @@ export default function DashboardPage() {
           <RecentVideos />
         </div>
         <div className="space-y-6">
-          <CreditsDisplay credits={stats.credits} plan={stats.plan} loading={loading} />
+          <CreditsDisplay credits={stats.credits} plan={stats.role} loading={loading} />
           <div className="card-base p-6 space-y-4">
             <h3 className="font-bold text-white">Actions rapides</h3>
             <Link href="/dashboard/creator" className="block">

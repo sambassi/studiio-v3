@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const defaultPasswordHash = await bcrypt.hash('Studiio2026!', 12);
+
     // Setup bassicustomshoes@gmail.com - unlimited free user
     const { data: basicUser } = await supabase
       .from('users')
@@ -44,28 +46,23 @@ export async function POST(req: NextRequest) {
       .eq('email', 'bassicustomshoes@gmail.com')
       .single();
 
-    const defaultPasswordHash = await bcrypt.hash('Studiio2026!', 12);
-
     if (basicUser) {
       await supabase
         .from('users')
         .update({
           credits: 999999,
-          plan: 'free',
           role: 'user',
           password_hash: defaultPasswordHash,
           updated_at: new Date().toISOString(),
         })
         .eq('id', basicUser.id);
     } else {
-      const passwordHash = await bcrypt.hash('Studiio2026!', 12);
       await supabase.from('users').insert({
         id: uuidv4(),
         name: 'Bassi',
         email: 'bassicustomshoes@gmail.com',
-        password_hash: passwordHash,
+        password_hash: defaultPasswordHash,
         credits: 999999,
-        plan: 'free',
         role: 'user',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -84,21 +81,18 @@ export async function POST(req: NextRequest) {
         .from('users')
         .update({
           credits: 999999,
-          plan: 'enterprise',
           role: 'admin',
           password_hash: defaultPasswordHash,
           updated_at: new Date().toISOString(),
         })
         .eq('id', adminUser.id);
     } else {
-      const passwordHash = await bcrypt.hash('Studiio2026!', 12);
       await supabase.from('users').insert({
         id: uuidv4(),
         name: 'Admin Afroboost',
         email: 'contact.artboost@gmail.com',
-        password_hash: passwordHash,
+        password_hash: defaultPasswordHash,
         credits: 999999,
-        plan: 'enterprise',
         role: 'admin',
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -109,8 +103,8 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Setup termine avec succes',
       accounts: {
-        admin: 'contact.artboost@gmail.com (role: admin, plan: enterprise)',
-        freeUser: 'bassicustomshoes@gmail.com (role: user, plan: free, credits: illimites)',
+        admin: 'contact.artboost@gmail.com (role: admin, credits: illimites)',
+        freeUser: 'bassicustomshoes@gmail.com (role: user, credits: illimites)',
       },
     });
   } catch (error) {

@@ -9,7 +9,7 @@ interface CreditsDisplayProps {
 }
 
 export function CreditsDisplay({ credits, plan, loading }: CreditsDisplayProps) {
-  const planLabel = plan === 'pro' ? 'Pro' : plan === 'enterprise' ? 'Enterprise' : 'Starter';
+  const planLabel = plan === 'admin' ? 'Admin' : 'Utilisateur';
 
   return (
     <Card className="border-studiio-accent/30">
