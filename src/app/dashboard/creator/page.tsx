@@ -705,20 +705,28 @@ export default function CreatorPage() {
                         >
                           {slot.type === 'title-card' ? (
                             /* Title card - black with white text, same size as video */
-                            <div className="w-40 h-56 bg-black rounded-xl border border-gray-700 flex flex-col items-center justify-center p-3 relative">
+                            <div
+                              className="w-40 h-56 bg-black rounded-xl border border-gray-700 flex flex-col items-center justify-center p-3 relative"
+                              onMouseDown={(e) => {
+                                // Allow input focus by disabling drag on title cards when clicking inside
+                                const tag = (e.target as HTMLElement).tagName;
+                                if (tag === 'INPUT') e.stopPropagation();
+                              }}
+                            >
                               <input
                                 type="text"
                                 placeholder="TEXTE"
                                 draggable={false}
-                                onMouseDown={(e) => e.stopPropagation()}
-                                onDragStart={(e) => e.stopPropagation()}
+                                onMouseDown={(e) => { e.stopPropagation(); }}
+                                onClick={(e) => { e.stopPropagation(); (e.target as HTMLInputElement).focus(); }}
+                                onDragStart={(e) => { e.preventDefault(); e.stopPropagation(); }}
                                 value={slot.titleText || ''}
                                 onChange={(e) => {
                                   const updated = [...rushSlots];
                                   updated[i].titleText = e.target.value;
                                   setRushSlots(updated);
                                 }}
-                                className="w-full bg-transparent text-white text-sm font-bold text-center uppercase placeholder-gray-600 outline-none cursor-text"
+                                className="w-full bg-transparent text-white text-sm font-bold text-center uppercase placeholder-gray-600 outline-none cursor-text border-b border-gray-700 focus:border-purple-500 py-1 transition"
                               />
                               <span className="text-[10px] text-gray-600 mt-2">2s</span>
                               <button
