@@ -663,85 +663,139 @@ export default function CreatorPage() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Rush vidéos ({rushSlots.filter(s => s.file).length}/{rushSlots.length})</CardTitle>
-                    <div className="flex gap-2">
-                      {rushSlots.length < MAX_SLOTS && (
-                        <>
-                          <Button variant="outline" size="sm" onClick={addSlot}><Plus className="w-4 h-4 mr-1" /> Ajouter</Button>
-                          <Button variant="outline" size="sm" onClick={addTitleCard}><Type className="w-4 h-4 mr-1" /> Carte titre</Button>
-                        </>
-                      )}
-                    </div>
+                    <CardTitle>Rush vidéos ({rushSlots.filter(s => s.file || s.type === 'title-card').length})</CardTitle>
+                    <Button variant="outline" size="sm" onClick={addSlot}><Plus className="w-4 h-4 mr-1" /> Ajouter</Button>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-3">
-                    {rushSlots.map((slot, i) => (
-                      <div key={slot.id} className="flex items-center gap-2">
-                        {slot.type === 'title-card' ? (
-                          // Title card slot
-                          <div className="flex-1 bg-gray-800 rounded-lg p-4 border border-gray-700">
-                            <div className="flex items-center gap-3">
-                              <Type className="w-5 h-5 text-pink-400" />
-                              <input
-                                type="text"
-                                placeholder="Texte de la carte titre"
-                                value={slot.titleText || ''}
-                                onChange={(e) => {
-                                  const updated = [...rushSlots];
-                                  updated[i].titleText = e.target.value;
-                                  setRushSlots(updated);
-                                }}
-                                className="flex-1 bg-gray-700 border border-gray-600 rounded px-2 py-1 text-white text-sm"
-                              />
-                            </div>
-                          </div>
-                        ) : (
-                          // Video slot
-                          <div className="flex-1">
-                            {slot.preview ? (
-                              <div className="bg-gray-800 rounded-lg overflow-hidden relative group p-2">
-                                <div className="aspect-[9/16] bg-gray-700 rounded overflow-hidden mb-2">
-                                  <video src={slot.preview} className="w-full h-full object-cover" muted />
+                  {/* Horizontal filmstrip */}
+                  <div className="overflow-x-auto pb-2">
+                    <div className="flex items-center gap-0 min-w-max">
+                      {/* Add button at start */}
+                      <button
+                        onClick={() => {
+                          const newSlot: VideoSlot = {
+                            id: `tc-${Date.now()}`,
+                            file: null,
+                            preview: null,
+                            name: 'Carte titre',
+                            type: 'title-card',
+                            titleText: '',
+                          };
+                          setRushSlots([newSlot, ...rushSlots]);
+                        }}
+                        className="flex-shrink-0 w-6 h-24 flex items-center justify-center text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 rounded transition"
+                        title="Insérer carte titre"
+                      >
+                        <Plus size={14} />
+                      </button>
+
+                      {rushSlots.map((slot, i) => (
+                        <div key={slot.id} className="flex items-center">
+                          {/* Slot item */}
+                          <div
+                            draggable
+                            onDragStart={(e) => {
+                              e.dataTransfer.setData('text/plain', i.toString());
+                              e.currentTarget.style.opacity = '0.5';
+                            }}
+                            onDragEnd={(e) => { e.currentTarget.style.opacity = '1'; }}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              const fromIndex = parseInt(e.dataTransfer.getData('text/plain'));
+                              if (fromIndex !== i) {
+                                const updated = [...rushSlots];
+                                const [moved] = updated.splice(fromIndex, 1);
+                                updated.splice(i, 0, moved);
+                                setRushSlots(updated);
+                              }
+                            }}
+                            className="relative flex-shrink-0 cursor-grab active:cursor-grabbing group"
+                          >
+                            {slot.type === 'title-card' ? (
+                              /* Title card - black with white text */
+                              <div className="w-28 h-24 bg-black rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center p-2 relative">
+                                <input
+                                  type="text"
+                                  placeholder="TEXTE"
+                                  value={slot.titleText || ''}
+                                  onChange={(e) => {
+                                    const updated = [...rushSlots];
+                                    updated[i].titleText = e.target.value;
+                                    setRushSlots(updated);
+                                  }}
+                                  className="w-full bg-transparent text-white text-xs font-bold text-center uppercase placeholder-gray-500 outline-none"
+                                />
+                                <span className="text-[9px] text-gray-500 mt-1">TEXTE 2s</span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); removeSlot(i); }}
+                                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                                >
+                                  <X size={10} className="text-white" />
+                                </button>
+                              </div>
+                            ) : slot.preview ? (
+                              /* Video with preview */
+                              <div className="w-28 h-24 rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition">
+                                <video src={slot.preview} className="w-full h-full object-cover" muted />
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/70 px-1 py-0.5 flex items-center justify-between">
+                                  <span className="text-[9px] text-gray-300 truncate flex-1">{slot.name}</span>
+                                  <span className="text-[9px] text-pink-400 ml-1">2s</span>
                                 </div>
-                                <p className="text-xs text-gray-300 truncate">{slot.name}</p>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); removeSlot(i); }}
+                                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                                >
+                                  <X size={10} className="text-white" />
+                                </button>
                               </div>
                             ) : (
-                              <label className="block aspect-[9/16] bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition">
-                                <Upload className="w-6 h-6 text-gray-400 mb-1" />
-                                <span className="text-xs text-gray-400">Rush {i + 1}</span>
+                              /* Empty upload slot */
+                              <label className="w-28 h-24 bg-gray-800 rounded-lg border-2 border-dashed border-gray-600 flex flex-col items-center justify-center cursor-pointer hover:border-purple-500 transition relative">
+                                <Upload className="w-4 h-4 text-gray-500 mb-1" />
+                                <span className="text-[9px] text-gray-500">Rush {i + 1}</span>
                                 <input type="file" accept="video/*" className="hidden"
                                   onChange={e => e.target.files?.[0] && handleRushUpload(i, e.target.files[0])} />
+                                <button
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); removeSlot(i); }}
+                                  className="absolute -top-1 -right-1 w-4 h-4 bg-red-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+                                >
+                                  <X size={10} className="text-white" />
+                                </button>
                               </label>
                             )}
                           </div>
-                        )}
 
-                        {/* Move buttons */}
-                        <div className="flex flex-col gap-1">
+                          {/* "+" button between items */}
                           <button
-                            onClick={() => moveSlot(i, 'up')}
-                            disabled={i === 0}
-                            className="p-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
+                            onClick={() => {
+                              const newSlot: VideoSlot = {
+                                id: `tc-${Date.now()}`,
+                                file: null,
+                                preview: null,
+                                name: 'Carte titre',
+                                type: 'title-card',
+                                titleText: '',
+                              };
+                              const updated = [...rushSlots];
+                              updated.splice(i + 1, 0, newSlot);
+                              setRushSlots(updated);
+                            }}
+                            className="flex-shrink-0 w-6 h-24 flex items-center justify-center text-pink-400 hover:text-pink-300 hover:bg-pink-500/10 rounded transition"
+                            title="Insérer carte titre"
                           >
-                            <ArrowUp className="w-4 h-4 text-gray-300" />
-                          </button>
-                          <button
-                            onClick={() => moveSlot(i, 'down')}
-                            disabled={i === rushSlots.length - 1}
-                            className="p-1 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded"
-                          >
-                            <ArrowDown className="w-4 h-4 text-gray-300" />
+                            <Plus size={14} />
                           </button>
                         </div>
-
-                        {/* Delete button */}
-                        <button onClick={() => removeSlot(i)} className="p-1 bg-red-600 hover:bg-red-700 rounded">
-                          <Trash2 className="w-4 h-4 text-white" />
-                        </button>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Instructions */}
+                  <p className="text-[10px] text-gray-500 mt-2">
+                    Glissez-déposez pour réorganiser • Cliquez + pour ajouter des cartes titres
+                  </p>
                 </CardContent>
               </Card>
 
