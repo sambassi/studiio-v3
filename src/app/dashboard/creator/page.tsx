@@ -295,13 +295,12 @@ export default function CreatorPage() {
       name: file.name.replace(/\.[^/.]+$/, ''),
     };
     setRushSlots(updated);
-    // Get real video duration
+    // Get real video duration (don't revoke - same blob URL used for preview)
     const vid = document.createElement('video');
     vid.preload = 'metadata';
     vid.onloadedmetadata = () => {
       const dur = Math.round(vid.duration);
       setRushSlots(prev => prev.map((s, j) => j === index ? { ...s, duration: dur } : s));
-      URL.revokeObjectURL(vid.src);
     };
     vid.src = preview;
   };
@@ -752,7 +751,13 @@ export default function CreatorPage() {
                             ) : slot.preview ? (
                               /* Video with preview */
                               <div className="w-28 h-24 rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition">
-                                <video src={slot.preview + '#t=0.5'} className="w-full h-full object-cover" muted preload="metadata" />
+                                <video
+                                  src={slot.preview}
+                                  className="w-full h-full object-cover"
+                                  muted
+                                  preload="auto"
+                                  onLoadedData={(e) => { const v = e.currentTarget; v.currentTime = 0.5; }}
+                                />
                                 <div className="absolute bottom-0 left-0 right-0 bg-black/70 px-1 py-0.5 flex items-center justify-between">
                                   <span className="text-[9px] text-gray-300 truncate flex-1">{slot.name}</span>
                                   <span className="text-[9px] text-pink-400 ml-1">{slot.duration || '?'}s</span>
