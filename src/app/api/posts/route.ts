@@ -3,9 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 import { auth } from '@/lib/auth/config';
 import { v4 as uuidv4 } from 'uuid';
 
+export const maxDuration = 30; // Allow up to 30 seconds for file uploads
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+);
+
+// Use service role for storage operations (bucket access)
+const supabaseStorage = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
 export async function GET(req: NextRequest) {
@@ -92,31 +100,39 @@ export async function POST(req: NextRequest) {
     }
 
     // Handle media file if present
-    const media = formData.get('media') as File | null;
     let mediaUrl: string | null = null;
+    try {
+      const media = formData.get('media');
+      if (media && typeof media === 'object' && 'size' in media && (media as File).size > 0) {
+        const file = media as File;
+        const buffer = await file.arrayBuffer();
+        const filename = `${session.user.id}/${Date.now()}_${file.name}`;
 
-    if (media && media.size > 0) {
-      try {
-        const buffer = await media.arrayBuffer();
-        const filename = `${session.user.id}/${Date.now()}_${media.name}`;
+        // Ensure bucket exists
+        await supabaseStorage.storage.createBucket('posts', {
+          public: true,
+          fileSizeLimit: 100 * 1024 * 1024,
+        }).catch(() => {}); // Ignore if already exists
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabaseStorage.storage
           .from('posts')
-          .upload(filename, new Uint8Array(buffer));
+          .upload(filename, Buffer.from(buffer), {
+            contentType: file.type,
+            upsert: false,
+          });
 
         if (uploadError) {
           console.error('Storage upload error:', uploadError);
-          // Continue without media - don't block post creation
         } else {
-          const { data: { publicUrl } } = supabase.storage
+          const { data: { publicUrl } } = supabaseStorage.storage
             .from('posts')
             .getPublicUrl(filename);
           mediaUrl = publicUrl;
         }
-      } catch (uploadErr) {
-        console.error('Media upload exception:', uploadErr);
-        // Continue without media
       }
+    } catch (uploadErr) {
+      console.error('Media upload exception:', uploadErr);
+      // Continue without media - don't block post creation
     }
 
     const postId = uuidv4();
