@@ -361,30 +361,18 @@ export default function CreatorPage() {
     setShowTitleSuggestions(false);
   };
 
-  // Generate voice over via Edge TTS
+  // Generate voice over via Edge TTS (client-side WebSocket - no server needed)
   const generateVoiceOver = async () => {
     if (!voiceText.trim()) return;
     setGeneratingVoice(true);
     try {
-      const res = await fetch('/api/tts/edge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          text: voiceText,
-          voice: selectedVoice,
-        }),
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        const file = new File([blob], 'voix-off.mp3', { type: 'audio/mpeg' });
-        setVoiceFile(file);
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        alert(errData.error || 'Erreur lors de la génération de la voix. Utilisez l\'option upload.');
-      }
-    } catch (error) {
-      console.error('Error generating voice:', error);
-      alert('Erreur réseau. Vérifiez votre connexion.');
+      const { synthesizeSpeech } = await import('@/lib/tts/edge-tts-client');
+      const blob = await synthesizeSpeech(voiceText, { voice: selectedVoice });
+      const file = new File([blob], 'voix-off.mp3', { type: 'audio/mpeg' });
+      setVoiceFile(file);
+    } catch (error: any) {
+      console.error('TTS error:', error);
+      alert(error.message || 'Erreur lors de la génération de la voix. Utilisez l\'option upload.');
     } finally {
       setGeneratingVoice(false);
     }

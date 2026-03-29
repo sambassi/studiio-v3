@@ -229,22 +229,15 @@ export default function InfographiePage() {
     if (!voiceText.trim()) return;
     setGeneratingVoice(true);
     try {
-      const res = await fetch('/api/tts/edge', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: voiceText, voice: selectedVoice }),
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        const file = new File([blob], 'voix-off-infographie.mp3', { type: 'audio/mpeg' });
-        setVoixOff(file);
-        setVoiceGenerated(true);
-      } else {
-        setToastMsg('Service TTS indisponible - utilisez upload');
-        setTimeout(() => setToastMsg(null), 4000);
-      }
-    } catch (error) {
+      const { synthesizeSpeech } = await import('@/lib/tts/edge-tts-client');
+      const blob = await synthesizeSpeech(voiceText, { voice: selectedVoice });
+      const file = new File([blob], 'voix-off-infographie.mp3', { type: 'audio/mpeg' });
+      setVoixOff(file);
+      setVoiceGenerated(true);
+    } catch (error: any) {
       console.error('TTS error:', error);
+      setToastMsg(error.message || 'Erreur TTS - utilisez upload');
+      setTimeout(() => setToastMsg(null), 4000);
     } finally {
       setGeneratingVoice(false);
     }
