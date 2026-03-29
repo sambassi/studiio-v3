@@ -220,7 +220,7 @@ export default function InfographiePage() {
                   {THEMES.map(theme => (
                     <button
                       key={theme.id}
-                      onClick={() => setSelectedTheme(theme.id)}
+                      onClick={() => { setSelectedTheme(theme.id); setTitle(theme.label.toUpperCase()); }}
                       className={`px-4 py-3 rounded-lg font-medium transition ${
                         selectedTheme === theme.id
                           ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
@@ -458,7 +458,7 @@ export default function InfographiePage() {
                 <div className="bg-gray-800 rounded-lg aspect-video flex items-center justify-center overflow-hidden">
                   <div className="w-full h-full bg-gradient-to-b from-purple-900 to-gray-900 p-4 flex flex-col justify-between text-white">
                     <div className="text-center">
-                      <div className="text-xs text-gray-400 mb-2">{selectedTheme.toUpperCase()}</div>
+                      <div className="text-xs text-gray-400 mb-2">{(THEMES.find(t => t.id === selectedTheme)?.label || selectedTheme).toUpperCase()}</div>
                       <h2 className="text-2xl font-bold mb-2">{title}</h2>
                       <p className="text-sm text-gray-300">{subtitle}</p>
                     </div>
