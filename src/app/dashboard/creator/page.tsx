@@ -325,10 +325,10 @@ export default function CreatorPage() {
 
   // Fetch Pexels photo for AI character
   const fetchAiCharacter = async (query?: string) => {
-    const searchTerm = query || aiSearchQuery || selectedObjectives.join(' ') || 'fitness athlete';
+    const searchTerm = query || aiSearchQuery || selectedObjectives.join(' ') + ' fitness' || 'fitness athlete';
     setAiCharacterLoading(true);
     try {
-      const res = await fetch(`/api/pexels/search?q=${encodeURIComponent(searchTerm + ' person portrait')}&per_page=5`);
+      const res = await fetch(`/api/pexels/search?q=${encodeURIComponent(searchTerm)}&per_page=10`);
       const data = await res.json();
       if (data.photos?.length) {
         const photo = data.photos[Math.floor(Math.random() * data.photos.length)];
@@ -885,7 +885,7 @@ export default function CreatorPage() {
                       <div className="flex gap-2">
                         <input
                           type="text"
-                          placeholder="Ex: femme fitness, homme musculation..."
+                          placeholder="Ex: femme noir musclée, homme sport..."
                           value={aiSearchQuery}
                           onChange={(e) => setAiSearchQuery(e.target.value)}
                           onKeyDown={(e) => e.key === 'Enter' && fetchAiCharacter()}
