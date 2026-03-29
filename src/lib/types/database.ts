@@ -7,6 +7,7 @@ export interface User {
   updated_at: string;
   credits: number;
   plan: 'free' | 'starter' | 'pro' | 'enterprise';
+  role: 'user' | 'admin';
 }
 
 export interface Objective {
@@ -27,7 +28,7 @@ export interface Video {
   title: string;
   description: string;
   format: 'reel' | 'tv';
-  status: 'draft' | 'rendering' | 'completed' | 'published';
+  status: 'draft' | 'rendering' | 'completed' | 'published' | 'error';
   objective_id?: string;
   script?: string;
   thumbnail_url?: string;
@@ -35,6 +36,10 @@ export interface Video {
   credits_used: number;
   created_at: string;
   updated_at: string;
+  mode?: string;
+  render_url?: string;
+  metadata?: Record<string, any>;
+  error_message?: string;
 }
 
 export interface Subscription {
@@ -84,4 +89,48 @@ export interface PublishingHistory {
   comments: number;
   shares: number;
   created_at: string;
+}
+
+export interface InfoCardData {
+  icon: string;
+  label: string;
+  value: string;
+  color: string;
+}
+
+export interface InfoVideo {
+  id: string;
+  user_id: string;
+  title: string;
+  subtitle: string;
+  theme: string;
+  info_cards: InfoCardData[];
+  character_url?: string;
+  music_url?: string;
+  logo_url?: string;
+  voix_off_url?: string;
+  mix_video_url?: string;
+  duration: number;
+  status: 'draft' | 'rendering' | 'completed' | 'error';
+  render_url?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Post {
+  id: string;
+  user_id: string;
+  title?: string;
+  caption: string;
+  media_url?: string;
+  media_type?: 'video' | 'image';
+  platforms: string[];
+  scheduled_date: string;
+  scheduled_time: string;
+  status: 'draft' | 'scheduled' | 'published' | 'failed';
+  video_id?: string;
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
 }

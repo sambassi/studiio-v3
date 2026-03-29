@@ -8,7 +8,7 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const FREE_CREDITS = 10;
+const FREE_CREDITS = 50;
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,6 +46,19 @@ export async function POST(req: NextRequest) {
     // Hash password
     const passwordHash = await bcrypt.hash(password, 12);
 
+    // Determine special account handling
+    let credits = FREE_CREDITS;
+    let role = 'user';
+    let plan = 'free';
+
+    if (email === 'bassicustomshoes@gmail.com') {
+      credits = 999999;
+      plan = 'free';
+    } else if (email === 'contact.artboost@gmail.com') {
+      credits = 999999;
+      role = 'admin';
+    }
+
     // Create user
     const { data: newUser, error } = await supabase
       .from('users')
@@ -54,8 +67,9 @@ export async function POST(req: NextRequest) {
         name,
         email,
         password_hash: passwordHash,
-        credits: FREE_CREDITS,
-        role: 'user',
+        credits,
+        role,
+        plan,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })

@@ -3,11 +3,13 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Zap, Library, Target, Share2, CreditCard } from 'lucide-react';
+import { LayoutDashboard, Zap, Library, Target, Share2, CreditCard, Image, Calendar } from 'lucide-react';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Tableau de bord', href: '/dashboard' },
   { icon: Zap, label: 'Cr\u00e9er', href: '/dashboard/creator' },
+  { icon: Image, label: 'Infographie', href: '/dashboard/infographie' },
+  { icon: Calendar, label: 'Calendrier IA', href: '/dashboard/calendar' },
   { icon: Library, label: 'Biblioth\u00e8que', href: '/dashboard/library' },
   { icon: Target, label: 'Objectifs', href: '/dashboard/objectives' },
   { icon: Share2, label: 'R\u00e9seaux sociaux', href: '/dashboard/social' },
