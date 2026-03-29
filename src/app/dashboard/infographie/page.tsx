@@ -51,6 +51,87 @@ const THEMES = [
   { id: 'personnalise', label: 'Personnalisé' },
 ];
 
+const THEME_DATA: Record<string, { title: string; subtitle: string; cards: InfoCard[]; salesPhrase: string; pexelsQuery: string }> = {
+  'sommeil-sport': {
+    title: 'SOMMEIL & SPORT',
+    subtitle: 'Optimise ta récupération',
+    cards: [
+      { id: '1', icon: '😴', label: 'Heures de sommeil', value: '7-9h', color: '#6366f1' },
+      { id: '2', icon: '💪', label: 'Performance', value: '+35%', color: '#818cf8' },
+      { id: '3', icon: '🧠', label: 'Concentration', value: '+50%', color: '#a78bfa' },
+      { id: '4', icon: '⚡', label: 'Énergie', value: 'MAX', color: '#c4b5fd' },
+      { id: '5', icon: '🔄', label: 'Récupération', value: '2x', color: '#ddd6fe' },
+    ],
+    salesPhrase: 'Dors mieux, performe plus !',
+    pexelsQuery: 'sleep fitness recovery',
+  },
+  'nutrition-danse': {
+    title: 'NUTRITION & DANSE',
+    subtitle: 'Nourris ton énergie',
+    cards: [
+      { id: '1', icon: '🥗', label: 'Protéines', value: '30g', color: '#22c55e' },
+      { id: '2', icon: '💃', label: 'Calories brûlées', value: '500+', color: '#4ade80' },
+      { id: '3', icon: '🍎', label: 'Fruits & Légumes', value: '5/jour', color: '#86efac' },
+      { id: '4', icon: '💧', label: 'Hydratation', value: '2L', color: '#bbf7d0' },
+      { id: '5', icon: '🔥', label: 'Métabolisme', value: '+25%', color: '#dcfce7' },
+    ],
+    salesPhrase: 'Mange bien, danse mieux !',
+    pexelsQuery: 'healthy food dance fitness',
+  },
+  'energie-cardio': {
+    title: 'ÉNERGIE & CARDIO',
+    subtitle: 'Dépasse tes limites',
+    cards: [
+      { id: '1', icon: '⚡', label: 'Intensité', value: 'MAX', color: '#ff006e' },
+      { id: '2', icon: '❤️', label: 'Fréquence', value: '140+', color: '#ff1493' },
+      { id: '3', icon: '💃', label: 'Chorégraphie', value: '50+', color: '#ff69b4' },
+      { id: '4', icon: '🎵', label: 'Playlist', value: '100%', color: '#ff85c0' },
+      { id: '5', icon: '⏱️', label: 'Récupération', value: '-45%', color: '#ffc0cb' },
+    ],
+    salesPhrase: 'Booste ton énergie !',
+    pexelsQuery: 'cardio workout energy fitness',
+  },
+  'stress-mental': {
+    title: 'STRESS & MENTAL',
+    subtitle: 'Libère ton esprit',
+    cards: [
+      { id: '1', icon: '🧘', label: 'Stress réduit', value: '-60%', color: '#06b6d4' },
+      { id: '2', icon: '😌', label: 'Bien-être', value: '+80%', color: '#22d3ee' },
+      { id: '3', icon: '🧠', label: 'Focus mental', value: 'MAX', color: '#67e8f9' },
+      { id: '4', icon: '💤', label: 'Qualité sommeil', value: '+45%', color: '#a5f3fc' },
+      { id: '5', icon: '🌿', label: 'Sérénité', value: '100%', color: '#cffafe' },
+    ],
+    salesPhrase: 'Libère ton stress, trouve la paix !',
+    pexelsQuery: 'yoga meditation mental health',
+  },
+  'communaute': {
+    title: 'COMMUNAUTÉ',
+    subtitle: 'Ensemble on est plus forts',
+    cards: [
+      { id: '1', icon: '👥', label: 'Membres actifs', value: '500+', color: '#f59e0b' },
+      { id: '2', icon: '🤝', label: 'Cours collectifs', value: '20+', color: '#fbbf24' },
+      { id: '3', icon: '🏆', label: 'Challenges', value: '12/an', color: '#fcd34d' },
+      { id: '4', icon: '💬', label: 'Échanges', value: '∞', color: '#fde68a' },
+      { id: '5', icon: '🎉', label: 'Événements', value: '4/mois', color: '#fef3c7' },
+    ],
+    salesPhrase: 'Rejoins la communauté !',
+    pexelsQuery: 'group fitness community workout',
+  },
+  'personnalise': {
+    title: 'PERSONNALISÉ',
+    subtitle: 'Créé par IA pour toi',
+    cards: [
+      { id: '1', icon: '🤖', label: 'IA Optimisé', value: '100%', color: '#a855f7' },
+      { id: '2', icon: '🎯', label: 'Objectif', value: 'SUR MESURE', color: '#c084fc' },
+      { id: '3', icon: '📈', label: 'Résultats', value: '+75%', color: '#d8b4fe' },
+      { id: '4', icon: '⭐', label: 'Satisfaction', value: '5/5', color: '#e9d5ff' },
+      { id: '5', icon: '🚀', label: 'Progression', value: 'RAPIDE', color: '#f3e8ff' },
+    ],
+    salesPhrase: 'Ton programme sur mesure !',
+    pexelsQuery: 'personal training fitness',
+  },
+};
+
 const DEFAULT_CARDS: InfoCard[] = [
   { id: '1', icon: '⚡', label: 'Intensité', value: 'MAX', color: '#ff006e' },
   { id: '2', icon: '❤️', label: 'Fréquence', value: '140+', color: '#ff1493' },
@@ -98,6 +179,14 @@ export default function InfographiePage() {
   const [renderProgress, setRenderProgress] = useState(0);
   const [renderStatus, setRenderStatus] = useState<'idle' | 'uploading' | 'rendering' | 'completed' | 'error'>('idle');
   const [renderError, setRenderError] = useState<string | null>(null);
+
+  // Photo Affiche
+  const [photoAfficheEnabled, setPhotoAfficheEnabled] = useState(false);
+  const [photoAfficheMode, setPhotoAfficheMode] = useState<'pexels' | 'upload'>('pexels');
+  const [photoAfficheUrl, setPhotoAfficheUrl] = useState<string | null>(null);
+  const [photoAfficheFile, setPhotoAfficheFile] = useState<File | null>(null);
+  const [photoAfficheLoading, setPhotoAfficheLoading] = useState(false);
+  const photoAfficheInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -161,6 +250,35 @@ export default function InfographiePage() {
     }
   };
 
+  const fetchPexelsPhoto = async (query?: string) => {
+    setPhotoAfficheLoading(true);
+    try {
+      const searchQuery = query || THEME_DATA[selectedTheme]?.pexelsQuery || 'fitness';
+      const res = await fetch(`/api/pexels/search?q=${encodeURIComponent(searchQuery)}&per_page=15`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.photos && data.photos.length > 0) {
+          const randomPhoto = data.photos[Math.floor(Math.random() * data.photos.length)];
+          setPhotoAfficheUrl(randomPhoto.src?.medium || randomPhoto.src?.original || null);
+        }
+      }
+    } catch (error) {
+      console.error('Pexels error:', error);
+    } finally {
+      setPhotoAfficheLoading(false);
+    }
+  };
+
+  const handlePhotoAfficheUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setPhotoAfficheFile(file);
+      const reader = new FileReader();
+      reader.onload = (ev) => setPhotoAfficheUrl(ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleBatchPhotoUpload = (index: number, file: File) => {
     const updated = [...batchPhotos];
     updated[index] = file;
@@ -191,6 +309,10 @@ export default function InfographiePage() {
       if (music) formData.append('music', music);
       if (voixOff) formData.append('voixOff', voixOff);
       if (logo) formData.append('logo', logo);
+      if (photoAfficheEnabled && photoAfficheUrl) {
+        formData.append('photoAfficheUrl', photoAfficheUrl);
+        if (photoAfficheFile) formData.append('photoAffiche', photoAfficheFile);
+      }
 
       // Upload batch photos if in batch mode
       if (batchMode) {
@@ -268,7 +390,20 @@ export default function InfographiePage() {
                   {THEMES.map(theme => (
                     <button
                       key={theme.id}
-                      onClick={() => { setSelectedTheme(theme.id); setTitle(theme.label.toUpperCase()); }}
+                      onClick={() => {
+                        setSelectedTheme(theme.id);
+                        const data = THEME_DATA[theme.id];
+                        if (data) {
+                          setTitle(data.title);
+                          setSubtitle(data.subtitle);
+                          setCards(data.cards.map(c => ({ ...c, id: Date.now().toString() + c.id })));
+                          setSalesPhrase(data.salesPhrase);
+                          // Auto-fetch pexels photo if photo affiche is enabled
+                          if (photoAfficheEnabled) {
+                            fetchPexelsPhoto(data.pexelsQuery);
+                          }
+                        }
+                      }}
                       className={`px-4 py-3 rounded-lg font-medium transition ${
                         selectedTheme === theme.id
                           ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white'
@@ -409,6 +544,134 @@ export default function InfographiePage() {
                     </button>
                   ))}
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Photo Affiche */}
+            <Card className="card-base border border-gray-700">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <ImageIcon size={18} className="text-purple-400" /> Photo Affiche
+                    <span className="text-[10px] text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded ml-1">Pexels</span>
+                  </h3>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={photoAfficheEnabled}
+                      onChange={(e) => {
+                        setPhotoAfficheEnabled(e.target.checked);
+                        if (e.target.checked && photoAfficheMode === 'pexels' && !photoAfficheUrl) {
+                          fetchPexelsPhoto();
+                        }
+                      }}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                  </label>
+                </div>
+
+                {photoAfficheEnabled && (
+                  <div className="space-y-4">
+                    {/* Mode selector */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setPhotoAfficheMode('pexels');
+                          if (!photoAfficheUrl) fetchPexelsPhoto();
+                        }}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition border ${
+                          photoAfficheMode === 'pexels'
+                            ? 'border-purple-500 bg-purple-500/10 text-white'
+                            : 'border-gray-700 bg-gray-800 text-gray-400'
+                        }`}
+                      >
+                        🖼️ Pexels (auto)
+                      </button>
+                      <button
+                        onClick={() => setPhotoAfficheMode('upload')}
+                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition border ${
+                          photoAfficheMode === 'upload'
+                            ? 'border-purple-500 bg-purple-500/10 text-white'
+                            : 'border-gray-700 bg-gray-800 text-gray-400'
+                        }`}
+                      >
+                        📤 Upload
+                      </button>
+                    </div>
+
+                    {/* Pexels mode */}
+                    {photoAfficheMode === 'pexels' && (
+                      <div>
+                        {photoAfficheLoading ? (
+                          <div className="w-full h-48 bg-gray-800 rounded-lg flex items-center justify-center">
+                            <Loader2 size={24} className="text-purple-400 animate-spin" />
+                          </div>
+                        ) : photoAfficheUrl ? (
+                          <div className="relative group">
+                            <img
+                              src={photoAfficheUrl}
+                              alt="Photo affiche"
+                              className="w-full h-48 object-cover rounded-lg"
+                            />
+                            <button
+                              onClick={() => fetchPexelsPhoto()}
+                              className="absolute top-2 right-2 p-2 bg-black/60 rounded-lg text-white opacity-0 group-hover:opacity-100 transition hover:bg-black/80"
+                              title="Changer la photo"
+                            >
+                              <Sparkles size={16} />
+                            </button>
+                            <p className="text-[10px] text-gray-500 mt-1">Photo Pexels • Cliquez pour changer</p>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => fetchPexelsPhoto()}
+                            className="w-full h-48 bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:text-purple-400 transition border-2 border-dashed border-gray-700 hover:border-purple-500"
+                          >
+                            <Sparkles size={24} className="mb-2" />
+                            <span className="text-sm">Générer une photo</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Upload mode */}
+                    {photoAfficheMode === 'upload' && (
+                      <div>
+                        {photoAfficheFile && photoAfficheUrl ? (
+                          <div className="relative group">
+                            <img
+                              src={photoAfficheUrl}
+                              alt="Photo affiche uploadée"
+                              className="w-full h-48 object-cover rounded-lg"
+                            />
+                            <button
+                              onClick={() => { setPhotoAfficheFile(null); setPhotoAfficheUrl(null); }}
+                              className="absolute top-2 right-2 p-2 bg-black/60 rounded-lg text-white opacity-0 group-hover:opacity-100 transition hover:bg-red-600"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => photoAfficheInputRef.current?.click()}
+                            className="w-full h-48 bg-gray-800 rounded-lg flex flex-col items-center justify-center text-gray-400 hover:text-purple-400 transition border-2 border-dashed border-gray-700 hover:border-purple-500"
+                          >
+                            <Upload size={24} className="mb-2" />
+                            <span className="text-sm">Cliquez pour ajouter votre photo</span>
+                          </button>
+                        )}
+                        <input
+                          ref={photoAfficheInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoAfficheUpload}
+                          className="hidden"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
