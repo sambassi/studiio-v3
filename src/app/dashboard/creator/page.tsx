@@ -93,6 +93,15 @@ const TITLE_SUGGESTIONS: Record<Objective, string[]> = {
   ],
 };
 
+// Textes pré-remplis pour les cartes titre entre les vidéos
+const CARD_TEXTS: Record<Objective, string[]> = {
+  promotion: ['OFFRE LIMITÉE', 'PROFITES-EN', '-50% MAINTENANT', 'DERNIÈRE CHANCE', 'DEAL DU JOUR'],
+  abonnement: ['REJOINS-NOUS', 'ESSAI GRATUIT', 'INSCRIS-TOI', 'NOUVEAU DÉPART', 'BIENVENUE'],
+  motivation: ['NO EXCUSES', 'PUSH HARDER', 'TON MOMENT', 'LÂCHE RIEN', 'DÉPASSE-TOI'],
+  bienfaits: ['SANTÉ FIRST', 'FEEL GOOD', 'TON BIEN-ÊTRE', 'CORPS & ESPRIT', 'VITALITÉ'],
+  nutrition: ['EAT CLEAN', 'FUEL UP', 'PROTÉINES', 'HYDRATE-TOI', 'MEAL PREP'],
+};
+
 const SUBTITLE_SUGGESTIONS: Record<Objective, string[]> = {
   promotion: [
     'Ne rate pas cette opportunité',
@@ -799,13 +808,18 @@ export default function CreatorPage() {
                         {/* "+" button between items */}
                         <button
                           onClick={() => {
+                            // Pick a themed text based on selected objectives
+                            const obj = selectedObjectives[0];
+                            const texts = obj ? CARD_TEXTS[obj] : [];
+                            const existingCards = rushSlots.filter(s => s.type === 'title-card').length;
+                            const suggestedText = texts[existingCards % texts.length] || '';
                             const newSlot: VideoSlot = {
                               id: `tc-${Date.now()}`,
                               file: null,
                               preview: null,
                               name: 'Carte titre',
                               type: 'title-card',
-                              titleText: '',
+                              titleText: suggestedText,
                             };
                             const updated = [...rushSlots];
                             updated.splice(i + 1, 0, newSlot);
