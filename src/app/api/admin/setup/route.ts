@@ -44,6 +44,8 @@ export async function POST(req: NextRequest) {
       .eq('email', 'bassicustomshoes@gmail.com')
       .single();
 
+    const defaultPasswordHash = await bcrypt.hash('Studiio2026!', 12);
+
     if (basicUser) {
       await supabase
         .from('users')
@@ -51,6 +53,7 @@ export async function POST(req: NextRequest) {
           credits: 999999,
           plan: 'free',
           role: 'user',
+          password_hash: defaultPasswordHash,
           updated_at: new Date().toISOString(),
         })
         .eq('id', basicUser.id);
@@ -83,6 +86,7 @@ export async function POST(req: NextRequest) {
           credits: 999999,
           plan: 'enterprise',
           role: 'admin',
+          password_hash: defaultPasswordHash,
           updated_at: new Date().toISOString(),
         })
         .eq('id', adminUser.id);
