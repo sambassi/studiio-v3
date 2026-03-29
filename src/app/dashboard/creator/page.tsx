@@ -21,6 +21,7 @@ interface VideoSlot {
   name: string;
   type?: 'video' | 'title-card';
   titleText?: string;
+  duration?: number;
 }
 
 interface TimelineItem {
@@ -284,15 +285,25 @@ export default function CreatorPage() {
   };
 
   const handleRushUpload = (index: number, file: File) => {
+    const preview = URL.createObjectURL(file);
     const updated = [...rushSlots];
     if (updated[index].preview) URL.revokeObjectURL(updated[index].preview!);
     updated[index] = {
       ...updated[index],
       file,
-      preview: URL.createObjectURL(file),
+      preview,
       name: file.name.replace(/\.[^/.]+$/, ''),
     };
     setRushSlots(updated);
+    // Get real video duration
+    const vid = document.createElement('video');
+    vid.preload = 'metadata';
+    vid.onloadedmetadata = () => {
+      const dur = Math.round(vid.duration);
+      setRushSlots(prev => prev.map((s, j) => j === index ? { ...s, duration: dur } : s));
+      URL.revokeObjectURL(vid.src);
+    };
+    vid.src = preview;
   };
 
   const handleCharacterUpload = (file: File) => {
@@ -719,13 +730,16 @@ export default function CreatorPage() {
                                 <input
                                   type="text"
                                   placeholder="TEXTE"
+                                  draggable={false}
+                                  onMouseDown={(e) => e.stopPropagation()}
+                                  onDragStart={(e) => e.stopPropagation()}
                                   value={slot.titleText || ''}
                                   onChange={(e) => {
                                     const updated = [...rushSlots];
                                     updated[i].titleText = e.target.value;
                                     setRushSlots(updated);
                                   }}
-                                  className="w-full bg-transparent text-white text-xs font-bold text-center uppercase placeholder-gray-500 outline-none"
+                                  className="w-full bg-transparent text-white text-xs font-bold text-center uppercase placeholder-gray-500 outline-none cursor-text"
                                 />
                                 <span className="text-[9px] text-gray-500 mt-1">TEXTE 2s</span>
                                 <button
@@ -738,10 +752,10 @@ export default function CreatorPage() {
                             ) : slot.preview ? (
                               /* Video with preview */
                               <div className="w-28 h-24 rounded-lg overflow-hidden relative border-2 border-transparent hover:border-purple-500 transition">
-                                <video src={slot.preview} className="w-full h-full object-cover" muted />
+                                <video src={slot.preview + '#t=0.5'} className="w-full h-full object-cover" muted preload="metadata" />
                                 <div className="absolute bottom-0 left-0 right-0 bg-black/70 px-1 py-0.5 flex items-center justify-between">
                                   <span className="text-[9px] text-gray-300 truncate flex-1">{slot.name}</span>
-                                  <span className="text-[9px] text-pink-400 ml-1">2s</span>
+                                  <span className="text-[9px] text-pink-400 ml-1">{slot.duration || '?'}s</span>
                                 </div>
                                 <button
                                   onClick={(e) => { e.stopPropagation(); removeSlot(i); }}
