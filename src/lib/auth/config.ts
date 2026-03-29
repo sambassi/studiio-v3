@@ -79,7 +79,7 @@ if (process.env.FACEBOOK_ID && process.env.FACEBOOK_SECRET) {
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  secret: process.env.NEXTAUTH_SECRET || 'studiio-dev-secret-change-in-production',
+  secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || 'studiio-dev-secret-change-in-production',
   session: {
     strategy: 'jwt',
   },
