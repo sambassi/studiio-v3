@@ -114,7 +114,7 @@ export default function ObjectivesPage() {
           <h1 className="text-3xl font-bold text-white mb-2">Objectifs</h1>
           <p className="text-gray-400">Définissez vos objectifs de création vidéo</p>
         </div>
-        <Button variant="primary" onClick={() => handleCancel()}>
+        <Button variant="primary" onClick={() => showForm ? handleCancel() : setShowForm(true)}>
           {showForm ? 'Annuler' : '+ Créer un objectif'}
         </Button>
       </div>
