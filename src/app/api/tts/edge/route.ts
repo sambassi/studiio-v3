@@ -22,7 +22,8 @@ export async function POST(req: NextRequest) {
 
     // Use edge-tts via dynamic import
     try {
-      const { MsEdgeTTS, OUTPUT_FORMAT } = await import('edge-tts');
+      // Import from compiled output to avoid TypeScript parsing issues
+      const { MsEdgeTTS, OUTPUT_FORMAT } = await import('edge-tts/out/index.js');
       const tts = new MsEdgeTTS();
       await tts.setMetadata(voice, OUTPUT_FORMAT.AUDIO_24KHZ_96KBITRATE_MONO_MP3);
 
