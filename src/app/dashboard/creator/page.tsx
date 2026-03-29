@@ -1275,18 +1275,18 @@ export default function CreatorPage() {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center space-y-4">
-                      <div className="bg-gray-800 rounded-lg p-4 inline-block">
+                    <div className="flex flex-col items-center justify-center space-y-4">
+                      <div className="bg-gray-800 rounded-lg px-8 py-4 text-center">
                         <p className="text-3xl font-bold text-white">{renderCost}</p>
                         <p className="text-sm text-gray-400">crédits nécessaires</p>
                       </div>
                       {!canRender && (
-                        <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-red-300 text-sm">
+                        <div className="bg-red-900/30 border border-red-700 rounded-lg p-3 text-red-300 text-sm max-w-sm text-center">
                           Crédits insuffisants. Vous avez {credits} crédits, il faut {renderCost}.
                         </div>
                       )}
                       <Button size="lg" onClick={handleRender} disabled={!canRender}
-                        className="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50">
+                        className="w-full max-w-xs py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 text-lg">
                         <Play className="w-5 h-5 mr-2" />
                         {batchMode ? `Lancer le batch x${batchCount}` : 'Lancer le rendu'}
                       </Button>
