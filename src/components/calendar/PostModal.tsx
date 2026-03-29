@@ -43,7 +43,7 @@ export function PostModal({
 
   const [scheduledDate, setScheduledDate] = useState(
     initialPost?.scheduled_date ||
-    (selectedDate ? formatLocalDate(selectedDate) : '')
+    (selectedDate ? formatLocalDate(selectedDate) : formatLocalDate(new Date()))
   );
   const [scheduledTime, setScheduledTime] = useState(initialPost?.scheduled_time || '18:00');
   const [magicInput, setMagicInput] = useState('');
@@ -140,12 +140,12 @@ export function PostModal({
         body: formData,
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      const data = await res.json();
+      if (res.ok && data.success) {
         onSave(data.data);
         onClose();
       } else {
-        setErrorMsg('Erreur lors de la sauvegarde');
+        setErrorMsg(data.error || 'Erreur lors de la sauvegarde');
       }
     } catch (error) {
       console.error('Error saving post:', error);

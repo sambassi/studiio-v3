@@ -96,18 +96,26 @@ export async function POST(req: NextRequest) {
     let mediaUrl: string | null = null;
 
     if (media && media.size > 0) {
-      const buffer = await media.arrayBuffer();
-      const filename = `${session.user.id}/${Date.now()}_${media.name}`;
+      try {
+        const buffer = await media.arrayBuffer();
+        const filename = `${session.user.id}/${Date.now()}_${media.name}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('posts')
-        .upload(filename, new Uint8Array(buffer));
-
-      if (!uploadError) {
-        const { data: { publicUrl } } = supabase.storage
+        const { error: uploadError } = await supabase.storage
           .from('posts')
-          .getPublicUrl(filename);
-        mediaUrl = publicUrl;
+          .upload(filename, new Uint8Array(buffer));
+
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          // Continue without media - don't block post creation
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('posts')
+            .getPublicUrl(filename);
+          mediaUrl = publicUrl;
+        }
+      } catch (uploadErr) {
+        console.error('Media upload exception:', uploadErr);
+        // Continue without media
       }
     }
 
