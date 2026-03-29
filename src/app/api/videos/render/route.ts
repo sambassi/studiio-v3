@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/config';
 import { createClient } from '@supabase/supabase-js';
 import { deductCredits, canRenderVideo } from '@/lib/credits/system';
-import { uploadRush, uploadMusic, uploadCharacter } from '@/lib/storage/supabase';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL || '',
@@ -14,23 +13,30 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Non autorise' },
+        { success: false, error: 'Non autorisé' },
         { status: 401 }
       );
     }
 
-    const formData = await req.formData();
-
-    const title = formData.get('title') as string;
-    const subtitle = formData.get('subtitle') as string;
-    const format = formData.get('format') as 'reel' | 'tv';
-    const mode = formData.get('mode') as string;
-    const objectives = formData.get('objectives') as string;
-    const timelineJson = formData.get('timeline') as string;
+    // Accept JSON body (files already uploaded to Supabase via presigned URLs)
+    const body = await req.json();
+    const {
+      title, subtitle, format, mode,
+      objectives: objectivesList = [],
+      timeline = [],
+      rushUrls = [],
+      musicUrl = null,
+      characterUrl = null,
+      voiceoverUrl = null,
+      batchMode = false,
+      batchCount = 1,
+      batchTitles = [],
+      destination = 'calendar',
+    } = body;
 
     if (!title || !format) {
       return NextResponse.json(
-        { success: false, error: 'Parametres manquants' },
+        { success: false, error: 'Paramètres manquants' },
         { status: 400 }
       );
     }
@@ -39,57 +45,9 @@ export async function POST(req: NextRequest) {
     const hasCredits = await canRenderVideo(session.user.id, format);
     if (!hasCredits) {
       return NextResponse.json(
-        { success: false, error: 'Credits insuffisants' },
+        { success: false, error: 'Crédits insuffisants' },
         { status: 402 }
       );
-    }
-
-    // Parse timeline and objectives
-    let timeline = [];
-    let objectivesList: string[] = [];
-    try {
-      timeline = JSON.parse(timelineJson || '[]');
-      objectivesList = JSON.parse(objectives || '[]');
-    } catch {
-      // fallback to empty
-    }
-
-    // Upload rush video files to Supabase Storage
-    const rushUrls: string[] = [];
-    for (let i = 0; i < 10; i++) {
-      const rushFile = formData.get(`rush_${i}`) as File | null;
-      if (rushFile && rushFile.size > 0) {
-        try {
-          const result = await uploadRush(rushFile, rushFile.name, rushFile.type, session.user.id);
-          rushUrls.push(result.url);
-        } catch (err: any) {
-          console.error(`Rush ${i} upload error:`, err.message);
-        }
-      }
-    }
-
-    // Upload music file
-    let musicUrl: string | null = null;
-    const musicFile = formData.get('music') as File | null;
-    if (musicFile && musicFile.size > 0) {
-      try {
-        const result = await uploadMusic(musicFile, musicFile.name, musicFile.type, session.user.id);
-        musicUrl = result.url;
-      } catch (err: any) {
-        console.error('Music upload error:', err.message);
-      }
-    }
-
-    // Upload character image
-    let characterUrl: string | null = null;
-    const characterFile = formData.get('character') as File | null;
-    if (characterFile && characterFile.size > 0) {
-      try {
-        const result = await uploadCharacter(characterFile, characterFile.name, characterFile.type, session.user.id);
-        characterUrl = result.url;
-      } catch (err: any) {
-        console.error('Character upload error:', err.message);
-      }
     }
 
     // Build Remotion input props
@@ -100,6 +58,7 @@ export async function POST(req: NextRequest) {
       rushUrls,
       musicUrl,
       characterUrl,
+      voiceoverUrl,
       timeline,
       mode: mode || 'cardio',
       objectives: objectivesList,
@@ -108,7 +67,7 @@ export async function POST(req: NextRequest) {
     // Calculate total duration from timeline
     const totalDuration = timeline.reduce((sum: number, item: any) => sum + (item.duration || 0), 0);
     const fps = 30;
-    const durationInFrames = Math.max(Math.round(totalDuration * fps), 300); // minimum 10 seconds
+    const durationInFrames = Math.max(Math.round(totalDuration * fps), 300);
 
     // Create video record in database
     const { data: video, error: insertError } = await supabase
@@ -126,10 +85,15 @@ export async function POST(req: NextRequest) {
           rushUrls,
           musicUrl,
           characterUrl,
+          voiceoverUrl,
           compositionId,
           inputProps,
           durationInFrames,
           fps,
+          destination,
+          batchMode,
+          batchCount: batchMode ? batchCount : 1,
+          batchTitles: batchMode ? batchTitles : [],
           rushCount: rushUrls.length,
           createdAt: new Date().toISOString(),
         },
@@ -144,33 +108,14 @@ export async function POST(req: NextRequest) {
     await deductCredits(session.user.id, renderCost, `render_${video.id}`);
 
     // NOTE: Actual Remotion rendering cannot run in Vercel serverless functions
-    // (requires Chromium + FFmpeg, exceeds 50MB limit).
-    // Options for production:
-    // 1. Remotion Lambda (AWS) - recommended for scalability
-    // 2. Vercel Sandbox (beta) - for simple renders
-    // 3. Dedicated render server (Railway/Fly.io/EC2)
-    //
-    // For now, mark as 'queued' and simulate completion.
-    // The video metadata contains all Remotion inputProps needed for rendering.
-
-    // Simulate render completion after delay
-    // In production, replace with actual Remotion Lambda call:
-    // import { renderMediaOnLambda } from '@remotion/lambda/client';
-    // const result = await renderMediaOnLambda({
-    //   region: 'us-east-1',
-    //   functionName: 'remotion-render-...',
-    //   composition: compositionId,
-    //   inputProps,
-    //   codec: 'h264',
-    //   framesPerLambda: 20,
-    // });
-
+    // In production, replace with Remotion Lambda call
+    // For now, simulate render completion after delay
     setTimeout(async () => {
       await supabase
         .from('videos')
         .update({
           status: 'completed',
-          render_url: null, // Would be the Remotion Lambda output URL
+          render_url: null,
           updated_at: new Date().toISOString(),
           metadata: {
             ...video.metadata,

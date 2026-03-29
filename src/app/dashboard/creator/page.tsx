@@ -391,48 +391,96 @@ export default function CreatorPage() {
   };
 
   // Submit render
+  // Upload a single file to Supabase via presigned URL (bypasses Vercel 4.5MB limit)
+  const uploadFileToStorage = async (file: File, bucket: string): Promise<string> => {
+    const presignRes = await fetch('/api/upload/presign', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ fileName: file.name, contentType: file.type, bucket }),
+    });
+    const presignData = await presignRes.json();
+    if (!presignData.success) throw new Error(presignData.error || 'Erreur de pré-signature');
+
+    const uploadRes = await fetch(presignData.data.signedUrl, {
+      method: 'PUT',
+      headers: { 'Content-Type': file.type },
+      body: file,
+    });
+    if (!uploadRes.ok) throw new Error(`Upload échoué (${uploadRes.status})`);
+
+    return presignData.data.publicUrl;
+  };
+
   const handleRender = async () => {
     if (!session?.user || rendering) return;
     setRendering(true);
     setRenderError(null);
-    setRenderStatus('Upload des fichiers...');
 
     try {
-      const formData = new FormData();
-      formData.append('title', title);
-      formData.append('subtitle', subtitle);
-      formData.append('format', format);
-      formData.append('mode', mode);
-      formData.append('objectives', JSON.stringify(selectedObjectives));
-      formData.append('timeline', JSON.stringify(timeline));
-
-      formData.append('destination', batchDestination);
-      if (batchMode) {
-        formData.append('batch', 'true');
-        formData.append('batchCount', String(batchCount));
-        formData.append('batchTitles', JSON.stringify(batchTitles));
-        formData.append('batchDestination', batchDestination);
+      // Step 1: Upload files directly to Supabase Storage
+      const rushUrls: string[] = [];
+      const rushFiles = rushSlots.filter(s => s.file && s.type !== 'title-card');
+      for (let i = 0; i < rushFiles.length; i++) {
+        const slot = rushFiles[i];
+        if (slot.file) {
+          setRenderStatus(`Upload rush ${i + 1}/${rushFiles.length}...`);
+          const url = await uploadFileToStorage(slot.file, 'rushes');
+          rushUrls.push(url);
+        }
       }
 
-      // Upload rush files
-      rushSlots.forEach((slot, i) => {
-        if (slot.file) {
-          formData.append(`rush_${i}`, slot.file);
-        }
-      });
+      let musicUrl: string | null = null;
+      if (musicFile) {
+        setRenderStatus('Upload musique...');
+        musicUrl = await uploadFileToStorage(musicFile, 'music');
+      }
 
-      if (musicFile) formData.append('music', musicFile);
-      if (characterFile) formData.append('character', characterFile);
-      if (voiceFile) formData.append('voiceover', voiceFile);
+      let charUrl: string | null = null;
+      if (characterFile) {
+        setRenderStatus('Upload personnage...');
+        charUrl = await uploadFileToStorage(characterFile, 'characters');
+      } else if (aiCharacterUrl) {
+        // Use Pexels URL directly
+        charUrl = aiCharacterUrl;
+      }
 
+      let voiceoverUrl: string | null = null;
+      if (voiceFile) {
+        setRenderStatus('Upload voix off...');
+        voiceoverUrl = await uploadFileToStorage(voiceFile, 'rushes');
+      }
+
+      // Step 2: Call render API with just URLs (small JSON payload)
       setRenderStatus('Lancement du rendu...');
-
       const res = await fetch('/api/videos/render', {
         method: 'POST',
-        body: formData,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title,
+          subtitle,
+          format,
+          mode,
+          objectives: selectedObjectives,
+          timeline,
+          rushUrls,
+          musicUrl,
+          characterUrl: charUrl,
+          voiceoverUrl,
+          destination: batchDestination,
+          batchMode,
+          batchCount: batchMode ? batchCount : 1,
+          batchTitles: batchMode ? batchTitles : [],
+        }),
       });
 
-      const data = await res.json();
+      // Handle non-JSON responses (e.g. Vercel error pages)
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error(`Erreur serveur: ${text.slice(0, 100)}`);
+      }
 
       if (!data.success) {
         throw new Error(data.error || 'Erreur lors du rendu');
@@ -517,10 +565,11 @@ export default function CreatorPage() {
             </div>
           )}
 
-          {/* Character overlay */}
+          {/* Character poster overlay - shown as main cover behind text */}
           {characterPreview && (
-            <div className="absolute bottom-4 right-4 w-16 h-16 rounded-full overflow-hidden border-2 border-white/50 shadow-lg">
+            <div className="absolute inset-0">
               <img src={characterPreview} className="w-full h-full object-cover" alt="" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-black/30" />
             </div>
           )}
 

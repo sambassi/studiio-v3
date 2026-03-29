@@ -5,26 +5,45 @@ const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
 
 // French-to-English translation map for common fitness/body terms
 const FR_EN_MAP: Record<string, string> = {
+  // People
   'femme': 'woman', 'homme': 'man', 'fille': 'girl', 'garçon': 'boy',
+  'femmee': 'woman', 'personne': 'person', 'gens': 'people',
+  // Skin / appearance
   'noir': 'black', 'noire': 'black', 'blanc': 'white', 'blanche': 'white',
   'musclé': 'muscular', 'musclée': 'muscular', 'musclees': 'muscular',
   'sportif': 'athletic', 'sportive': 'athletic',
+  'beau': 'handsome', 'belle': 'beautiful', 'joli': 'pretty', 'jolie': 'pretty',
+  // Emotions
+  'content': 'happy', 'contente': 'happy', 'heureux': 'happy', 'heureuse': 'happy',
+  'souriant': 'smiling', 'souriante': 'smiling', 'sourire': 'smile',
+  'confiant': 'confident', 'confiante': 'confident',
+  'fier': 'proud', 'fière': 'proud',
+  'motivé': 'motivated', 'motivée': 'motivated',
+  'déterminé': 'determined', 'déterminée': 'determined',
+  'énergique': 'energetic', 'dynamique': 'dynamic',
+  // Fitness
   'fitness': 'fitness', 'yoga': 'yoga', 'boxe': 'boxing',
   'course': 'running', 'courir': 'running',
   'musculation': 'bodybuilding', 'haltères': 'dumbbells',
   'salle': 'gym', 'sport': 'sport', 'entraînement': 'workout',
-  'coach': 'coach', 'entraineur': 'trainer',
+  'coach': 'coach', 'entraineur': 'trainer', 'entraîneur': 'trainer',
+  // Body
   'jeune': 'young', 'mince': 'slim', 'fort': 'strong', 'forte': 'strong',
+  'abdos': 'abs', 'bras': 'arms', 'jambes': 'legs', 'corps': 'body',
+  // Ethnicity
   'africain': 'african', 'africaine': 'african',
   'asiatique': 'asian', 'latin': 'latin', 'latina': 'latina',
-  'abdos': 'abs', 'bras': 'arms', 'jambes': 'legs',
+  // Nutrition & health
   'nutrition': 'nutrition', 'repas': 'meal', 'healthy': 'healthy',
-  'femmee': 'woman', // common typo
+  'santé': 'health', 'bien-être': 'wellness', 'naturel': 'natural', 'naturelle': 'natural',
+  // Context
+  'portrait': 'portrait', 'photo': 'photo', 'affiche': 'poster',
+  'une': '', 'un': '', 'le': '', 'la': '', 'les': '', 'de': '', 'du': '', 'des': '',
 };
 
 function translateToEnglish(query: string): string {
   const words = query.toLowerCase().split(/\s+/);
-  const translated = words.map(w => FR_EN_MAP[w] || w);
+  const translated = words.map(w => FR_EN_MAP[w] !== undefined ? FR_EN_MAP[w] : w).filter(Boolean);
   return translated.join(' ');
 }
 

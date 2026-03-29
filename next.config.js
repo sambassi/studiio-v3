@@ -1,7 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['edge-tts'],
+  // Ensure ws is treated as external for serverless (needed for Edge TTS)
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push('ws');
+    }
+    return config;
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
