@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY || '';
 
 // French-to-English translation map for common fitness/body terms
+// Exact word map
 const FR_EN_MAP: Record<string, string> = {
   // People
   'femme': 'woman', 'homme': 'man', 'fille': 'girl', 'garçon': 'boy',
@@ -13,6 +14,7 @@ const FR_EN_MAP: Record<string, string> = {
   'musclé': 'muscular', 'musclée': 'muscular', 'musclees': 'muscular',
   'sportif': 'athletic', 'sportive': 'athletic',
   'beau': 'handsome', 'belle': 'beautiful', 'joli': 'pretty', 'jolie': 'pretty',
+  'mignon': 'cute', 'mignonne': 'cute',
   // Emotions
   'content': 'happy', 'contente': 'happy', 'heureux': 'happy', 'heureuse': 'happy',
   'souriant': 'smiling', 'souriante': 'smiling', 'sourire': 'smile',
@@ -21,15 +23,19 @@ const FR_EN_MAP: Record<string, string> = {
   'motivé': 'motivated', 'motivée': 'motivated',
   'déterminé': 'determined', 'déterminée': 'determined',
   'énergique': 'energetic', 'dynamique': 'dynamic',
-  // Fitness
+  // Fitness activities
   'fitness': 'fitness', 'yoga': 'yoga', 'boxe': 'boxing',
-  'course': 'running', 'courir': 'running',
-  'musculation': 'bodybuilding', 'haltères': 'dumbbells',
-  'salle': 'gym', 'sport': 'sport', 'entraînement': 'workout',
+  'course': 'running', 'courir': 'running', 'cour': 'running', 'coureur': 'runner', 'coureuse': 'runner',
+  'marche': 'walking', 'marcher': 'walking',
+  'danse': 'dancing', 'danser': 'dancing', 'danseur': 'dancer', 'danseuse': 'dancer',
+  'musculation': 'weightlifting', 'haltères': 'dumbbells',
+  'salle': 'gym', 'sport': 'sport', 'entraînement': 'workout', 'entrainement': 'workout',
   'coach': 'coach', 'entraineur': 'trainer', 'entraîneur': 'trainer',
+  'étirement': 'stretching', 'pompes': 'pushups', 'squat': 'squat',
   // Body
   'jeune': 'young', 'mince': 'slim', 'fort': 'strong', 'forte': 'strong',
   'abdos': 'abs', 'bras': 'arms', 'jambes': 'legs', 'corps': 'body',
+  'grand': 'tall', 'grande': 'tall', 'petit': 'short', 'petite': 'short',
   // Ethnicity
   'africain': 'african', 'africaine': 'african',
   'asiatique': 'asian', 'latin': 'latin', 'latina': 'latina',
@@ -38,12 +44,61 @@ const FR_EN_MAP: Record<string, string> = {
   'santé': 'health', 'bien-être': 'wellness', 'naturel': 'natural', 'naturelle': 'natural',
   // Context
   'portrait': 'portrait', 'photo': 'photo', 'affiche': 'poster',
+  // Articles / prepositions (filtered out)
   'une': '', 'un': '', 'le': '', 'la': '', 'les': '', 'de': '', 'du': '', 'des': '',
+  'qui': '', 'que': '', 'est': '', 'en': '', 'et': '', 'au': '', 'aux': '',
+  'avec': '', 'dans': '', 'sur': '', 'pour': '',
 };
+
+// Prefix map for partial/truncated words (user typing "cour" for "courir")
+const FR_PREFIX_MAP: [string, string][] = [
+  ['cour', 'running'],   // cour, cours, course, courir, coureur
+  ['muscl', 'muscular'], // musclé, musclée, muscles
+  ['sport', 'athletic'], // sportif, sportive
+  ['entraîn', 'workout'], // entraînement, entraîneur
+  ['entrain', 'workout'],
+  ['danse', 'dancing'],
+  ['march', 'walking'],
+  ['sourian', 'smiling'],
+];
+
+// Words indicating the query is about a person (to append "portrait" for better results)
+const PERSON_WORDS = new Set(['woman', 'man', 'girl', 'boy', 'person', 'people', 'runner', 'dancer', 'trainer', 'coach', 'black', 'african', 'asian', 'latin', 'latina']);
 
 function translateToEnglish(query: string): string {
   const words = query.toLowerCase().split(/\s+/);
-  const translated = words.map(w => FR_EN_MAP[w] !== undefined ? FR_EN_MAP[w] : w).filter(Boolean);
+  const translated: string[] = [];
+  let hasPerson = false;
+
+  for (const w of words) {
+    // Try exact match first
+    if (FR_EN_MAP[w] !== undefined) {
+      const en = FR_EN_MAP[w];
+      if (en) {
+        translated.push(en);
+        if (PERSON_WORDS.has(en)) hasPerson = true;
+      }
+      continue;
+    }
+    // Try prefix match for truncated words
+    let matched = false;
+    for (const [prefix, en] of FR_PREFIX_MAP) {
+      if (w.startsWith(prefix)) {
+        translated.push(en);
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) {
+      translated.push(w); // Keep original if no translation found
+    }
+  }
+
+  // If query mentions a person, add "portrait" for better people-focused results
+  if (hasPerson && !translated.includes('portrait')) {
+    translated.push('portrait');
+  }
+
   return translated.join(' ');
 }
 
