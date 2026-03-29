@@ -47,7 +47,7 @@ export default function CalendarPage() {
   const fetchPosts = async () => {
     try {
       setLoading(true);
-      const month = currentDate.toISOString().slice(0, 7); // YYYY-MM
+      const month = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`; // YYYY-MM (local timezone)
       const res = await fetch(`/api/posts?month=${month}`);
       const data = await res.json();
       if (data.success) {
