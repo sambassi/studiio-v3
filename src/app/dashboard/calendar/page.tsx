@@ -76,10 +76,12 @@ export default function CalendarPage() {
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1));
   };
 
+  const formatDateStr = (year: number, month: number, day: number): string => {
+    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
   const getDayPosts = (day: number): Post[] => {
-    const dateStr = new Date(currentDate.getFullYear(), currentDate.getMonth(), day)
-      .toISOString()
-      .split('T')[0];
+    const dateStr = formatDateStr(currentDate.getFullYear(), currentDate.getMonth(), day);
     return posts.filter(p => p.scheduled_date === dateStr);
   };
 

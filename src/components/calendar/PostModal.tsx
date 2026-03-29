@@ -37,9 +37,13 @@ export function PostModal({
   const [mediaType, setMediaType] = useState<'video' | 'image'>(
     initialPost?.media_type || 'image'
   );
+  const formatLocalDate = (date: Date): string => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
   const [scheduledDate, setScheduledDate] = useState(
     initialPost?.scheduled_date ||
-    (selectedDate ? selectedDate.toISOString().split('T')[0] : '')
+    (selectedDate ? formatLocalDate(selectedDate) : '')
   );
   const [scheduledTime, setScheduledTime] = useState(initialPost?.scheduled_time || '18:00');
   const [magicInput, setMagicInput] = useState('');
