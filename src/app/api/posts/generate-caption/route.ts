@@ -1,33 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth/config';
+import { auth } from '@/lib/auth/config';
 
 const generateCaptionFromDescription = (
   description: string,
   platforms: string[]
 ): string => {
-  // Template-based caption generation
   const lines: string[] = [];
 
-  // Add opening hook based on description
   if (description.toLowerCase().includes('sport') || description.toLowerCase().includes('fitness')) {
     lines.push('💪 TA SÉANCE COMMENCE ICI! 🔥');
   } else if (description.toLowerCase().includes('nutrition') || description.toLowerCase().includes('recette')) {
     lines.push('🥗 NUTRITION OPTIMALE 💚');
   } else if (description.toLowerCase().includes('motivation')) {
     lines.push('⚡ PRÊT À TRANSFORMER TA VIE? 🚀');
+  } else if (description.toLowerCase().includes('cardio')) {
+    lines.push('❤️‍🔥 CARDIO EXPLOSIF! 💥');
   } else if (description.toLowerCase().includes('sommeil') || description.toLowerCase().includes('repos')) {
-    lines.push('😴 LE REPOS C\'EST AUSSI UNE ENTRAÎNEMENT 🌙');
+    lines.push('😴 LE REPOS C\'EST AUSSI UN ENTRAÎNEMENT 🌙');
+  } else if (description.toLowerCase().includes('cours')) {
+    lines.push('🎯 NOUVEAU COURS DISPONIBLE! 🔥');
   } else {
     lines.push('✨ NOUVEAU CONTENU 🎯');
   }
 
-  // Add description line
   lines.push('');
   lines.push(description);
   lines.push('');
 
-  // Add platform-specific CTA
   if (platforms.includes('instagram')) {
     lines.push('📌 Save ce post pour revenir plus tard');
   }
@@ -35,24 +34,29 @@ const generateCaptionFromDescription = (
     lines.push('♪ Partage avec tes potes');
   }
   if (platforms.includes('youtube')) {
-    lines.push('🔔 S\'abonner pour plus de contenu');
+    lines.push('🔔 Abonne-toi pour plus de contenu');
   }
 
-  // Add hashtags based on description
   lines.push('');
   const hashtags: string[] = [];
 
   if (description.toLowerCase().includes('sport') || description.toLowerCase().includes('fitness')) {
-    hashtags.push('#sport', '#fitness', '#entraînement', '#musculation');
+    hashtags.push('#sport', '#fitness', '#entrainement', '#musculation');
+  }
+  if (description.toLowerCase().includes('cardio')) {
+    hashtags.push('#cardio', '#hiit', '#endurance', '#energie');
   }
   if (description.toLowerCase().includes('nutrition')) {
-    hashtags.push('#nutrition', '#santé', '#alimentation', '#bienfaits');
+    hashtags.push('#nutrition', '#sante', '#alimentation', '#bienfaits');
   }
   if (description.toLowerCase().includes('motivation')) {
     hashtags.push('#motivation', '#mindset', '#transformation', '#objectif');
   }
+  if (description.toLowerCase().includes('cours')) {
+    hashtags.push('#cours', '#coaching', '#programme', '#training');
+  }
 
-  hashtags.push('#afroboost', '#vidéo', '#contenupour');
+  hashtags.push('#afroboost', '#video', '#contenu');
 
   if (platforms.includes('instagram')) {
     hashtags.push('#reels', '#instagram');
@@ -62,8 +66,6 @@ const generateCaptionFromDescription = (
   }
 
   lines.push(hashtags.join(' '));
-
-  // Add engagement CTA
   lines.push('');
   lines.push('👇 Dis-moi tes objectifs en commentaire!');
 
@@ -72,10 +74,10 @@ const generateCaptionFromDescription = (
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Non autorise' },
         { status: 401 }
       );
     }
@@ -85,12 +87,11 @@ export async function POST(req: NextRequest) {
 
     if (!description || !description.trim()) {
       return NextResponse.json(
-        { success: false, error: 'Description is required' },
+        { success: false, error: 'Description requise' },
         { status: 400 }
       );
     }
 
-    // Generate caption using template-based approach
     const caption = generateCaptionFromDescription(description, platforms);
 
     return NextResponse.json({
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Erreur serveur' },
       { status: 500 }
     );
   }

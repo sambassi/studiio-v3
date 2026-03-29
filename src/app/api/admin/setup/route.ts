@@ -1,30 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth/config';
+import { auth } from '@/lib/auth/config';
 import { v4 as uuidv4 } from 'uuid';
 import bcrypt from 'bcryptjs';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
 export async function POST(req: NextRequest) {
   try {
     const setupKey = req.headers.get('x-setup-key');
-    const sessionValid = await getServerSession(authOptions);
+    const session = await auth();
 
-    // Check if setup key is valid
     const validSetupKey =
       setupKey === process.env.ADMIN_SETUP_KEY &&
-      process.env.ADMIN_SETUP_KEY;
+      !!process.env.ADMIN_SETUP_KEY;
 
-    // Check if user is admin
     const isAdmin =
-      sessionValid?.user?.email &&
-      (sessionValid.user.email === 'contact.artboost@gmail.com' ||
-        sessionValid.user.email === 'bassicustomshoes@gmail.com');
+      session?.user?.id &&
+      (session.user.email === 'contact.artboost@gmail.com');
 
     // Check if any admin exists
     const { count: adminCount } = await supabase
@@ -32,17 +28,14 @@ export async function POST(req: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('role', 'admin');
 
-    const noAdminExists = adminCount === 0;
+    const noAdminExists = !adminCount || adminCount === 0;
 
-    // Authorization check
     if (!validSetupKey && !isAdmin && !noAdminExists) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Non autorise' },
         { status: 401 }
       );
     }
-
-    const body = await req.json();
 
     // Setup bassicustomshoes@gmail.com - unlimited free user
     const { data: basicUser } = await supabase
@@ -52,7 +45,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (basicUser) {
-      // Update existing user
       await supabase
         .from('users')
         .update({
@@ -63,21 +55,18 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', basicUser.id);
     } else {
-      // Create new user
-      const passwordHash = await bcrypt.hash('temporary_password_' + Date.now(), 12);
-      await supabase
-        .from('users')
-        .insert({
-          id: uuidv4(),
-          name: 'Basic User',
-          email: 'bassicustomshoes@gmail.com',
-          password_hash: passwordHash,
-          credits: 999999,
-          plan: 'free',
-          role: 'user',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const passwordHash = await bcrypt.hash('Studiio2026!', 12);
+      await supabase.from('users').insert({
+        id: uuidv4(),
+        name: 'Bassi',
+        email: 'bassicustomshoes@gmail.com',
+        password_hash: passwordHash,
+        credits: 999999,
+        plan: 'free',
+        role: 'user',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     }
 
     // Setup contact.artboost@gmail.com - admin account
@@ -88,7 +77,6 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (adminUser) {
-      // Update existing admin
       await supabase
         .from('users')
         .update({
@@ -99,31 +87,32 @@ export async function POST(req: NextRequest) {
         })
         .eq('id', adminUser.id);
     } else {
-      // Create new admin user
-      const passwordHash = await bcrypt.hash('temporary_password_' + Date.now(), 12);
-      await supabase
-        .from('users')
-        .insert({
-          id: uuidv4(),
-          name: 'Admin',
-          email: 'contact.artboost@gmail.com',
-          password_hash: passwordHash,
-          credits: 999999,
-          plan: 'enterprise',
-          role: 'admin',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const passwordHash = await bcrypt.hash('Studiio2026!', 12);
+      await supabase.from('users').insert({
+        id: uuidv4(),
+        name: 'Admin Afroboost',
+        email: 'contact.artboost@gmail.com',
+        password_hash: passwordHash,
+        credits: 999999,
+        plan: 'enterprise',
+        role: 'admin',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Setup completed successfully',
+      message: 'Setup termine avec succes',
+      accounts: {
+        admin: 'contact.artboost@gmail.com (role: admin, plan: enterprise)',
+        freeUser: 'bassicustomshoes@gmail.com (role: user, plan: free, credits: illimites)',
+      },
     });
   } catch (error) {
     console.error('Setup error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Erreur serveur' },
       { status: 500 }
     );
   }

@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth/config';
+import { auth } from '@/lib/auth/config';
 import { v4 as uuidv4 } from 'uuid';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
 interface ScheduleItem {
@@ -19,47 +18,36 @@ interface ScheduleItem {
 const generateAISchedule = (
   planDays: string,
   networks: string[],
-  objectives: string[],
-  description: string
+  objectives: string[]
 ): ScheduleItem[] => {
-  // Parse plan days
   const days = parseInt(planDays) || 30;
   const schedule: ScheduleItem[] = [];
 
-  const objectiveMap: { [key: string]: string[] } = {
+  const objectiveMap: Record<string, string[]> = {
     promo: ['🎯 NOUVELLE SÉANCE EN LIVE!', '📣 NE MANQUE PAS CETTE SESSION', '🚀 OFFRE LIMITÉE'],
     motiv: ['💪 TU AS LA FORCE!', '⚡ TRANSFORMATION EN COURS', '🔥 DONNE TON MAX'],
     bienfaits: ['✨ LES BIENFAITS DE...', '❤️ TA SANTÉ D\'ABORD', '🧠 ÉQUILIBRE MENTAL'],
-    abo: ['❤️ REJOINS LA COMMUNAUTÉ', '🎁 ABONNEMENT SPÉCIAL', '👥 PLUS NOUS, PLUS LOIN'],
+    abo: ['❤️ REJOINS LA COMMUNAUTÉ', '🎁 ABONNEMENT SPÉCIAL', '👥 ENSEMBLE ON VA PLUS LOIN'],
     nutri: ['🥗 NUTRITION OPTIMALE', '🍎 BIENFAITS NUTRITIFS', '💚 MANGE INTELLIGENT'],
   };
 
-  const networksEmojis: { [key: string]: string } = {
-    instagram: '📷',
-    tiktok: '♪',
-    facebook: 'f',
-    youtube: '▶️',
-  };
-
-  // Generate posts for each day at different times
-  let currentDate = new Date();
+  const currentDate = new Date();
   const times = ['06:00', '12:00', '18:00', '21:00'];
   let timeIndex = 0;
 
   for (let i = 0; i < days; i++) {
-    const dateStr = currentDate.toISOString().split('T')[0];
+    const date = new Date(currentDate.getTime() + i * 24 * 60 * 60 * 1000);
+    const dateStr = date.toISOString().split('T')[0];
 
-    // Vary objectives
     const objectiveKey = objectives[i % objectives.length];
     const captions = objectiveMap[objectiveKey] || ['✨ Nouveau contenu'];
     const caption =
       captions[Math.floor(Math.random() * captions.length)] +
       '\n\n' +
       `Jour ${i + 1} du planning IA\n\n` +
-      '#afroboost #vidéo #fitness\n\n' +
+      '#afroboost #fitness #video\n\n' +
       '👇 C\'est pour toi?';
 
-    // Pick time
     const time = times[timeIndex % times.length];
     timeIndex++;
 
@@ -69,9 +57,6 @@ const generateAISchedule = (
       caption,
       platforms: networks,
     });
-
-    // Move to next day
-    currentDate = new Date(currentDate.getTime() + 24 * 60 * 60 * 1000);
   }
 
   return schedule;
@@ -79,59 +64,35 @@ const generateAISchedule = (
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Non autorise' },
         { status: 401 }
-      );
-    }
-
-    // Get user
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', session.user.email)
-      .single();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
       );
     }
 
     const formData = await req.formData();
     const networks = JSON.parse(formData.get('networks') as string || '[]');
     const objectives = JSON.parse(formData.get('objectives') as string || '[]');
-    const planDays = formData.get('planDays') as string;
-    const enablePhoto = formData.get('enablePhoto') === 'true';
-    const enableVoixOff = formData.get('enableVoixOff') === 'true';
+    const planDays = (formData.get('planDays') as string) || '30';
 
     if (!networks.length || !objectives.length) {
       return NextResponse.json(
-        { success: false, error: 'Networks and objectives are required' },
+        { success: false, error: 'Reseaux et objectifs requis' },
         { status: 400 }
       );
     }
 
-    // Generate AI schedule
-    const schedule = generateAISchedule(
-      planDays,
-      networks,
-      objectives,
-      'AI-generated planning'
-    );
+    const schedule = generateAISchedule(planDays, networks, objectives);
 
-    // Create posts in database
     const createdPosts = [];
-
     for (const item of schedule) {
       const { data: post, error } = await supabase
         .from('posts')
         .insert({
           id: uuidv4(),
-          user_id: user.id,
+          user_id: session.user.id,
           caption: item.caption,
           platforms: item.platforms,
           scheduled_date: item.date,
@@ -154,20 +115,13 @@ export async function POST(req: NextRequest) {
         planGenerated: true,
         postsCreated: createdPosts.length,
         posts: createdPosts,
-        metadata: {
-          networks,
-          objectives,
-          planDays,
-          enablePhoto,
-          enableVoixOff,
-        },
       },
-      message: `Planning généré avec ${createdPosts.length} posts!`,
+      message: `Planning genere avec ${createdPosts.length} posts!`,
     });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Erreur serveur' },
       { status: 500 }
     );
   }

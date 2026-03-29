@@ -1,47 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth/config';
+import { auth } from '@/lib/auth/config';
 import { v4 as uuidv4 } from 'uuid';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Non autorise' },
         { status: 401 }
       );
     }
 
-    // Get user
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', session.user.email)
-      .single();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Get query params
     const url = new URL(req.url);
-    const month = url.searchParams.get('month'); // YYYY-MM
+    const month = url.searchParams.get('month');
     const status = url.searchParams.get('status');
 
     let query = supabase
       .from('posts')
       .select('*')
-      .eq('user_id', user.id);
+      .eq('user_id', session.user.id);
 
     if (month) {
       const monthStart = `${month}-01`;
@@ -63,7 +47,7 @@ export async function GET(req: NextRequest) {
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json(
-        { success: false, error: 'Failed to fetch posts' },
+        { success: false, error: 'Erreur lors de la recuperation des posts' },
         { status: 500 }
       );
     }
@@ -75,7 +59,7 @@ export async function GET(req: NextRequest) {
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Erreur serveur' },
       { status: 500 }
     );
   }
@@ -83,40 +67,26 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Non autorise' },
         { status: 401 }
-      );
-    }
-
-    // Get user
-    const { data: user } = await supabase
-      .from('users')
-      .select('id')
-      .eq('email', session.user.email)
-      .single();
-
-    if (!user) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
       );
     }
 
     const formData = await req.formData();
     const caption = formData.get('caption') as string;
-    const platforms = JSON.parse(formData.get('platforms') as string);
+    const platforms = JSON.parse(formData.get('platforms') as string || '[]');
     const scheduledDate = formData.get('scheduled_date') as string;
     const scheduledTime = formData.get('scheduled_time') as string;
-    const status = formData.get('status') as string;
+    const postStatus = (formData.get('status') as string) || 'draft';
     const mediaType = formData.get('media_type') as string;
     const title = formData.get('title') as string;
 
-    if (!caption || !platforms || !scheduledDate || !scheduledTime) {
+    if (!caption || !scheduledDate || !scheduledTime) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields' },
+        { success: false, error: 'Champs requis manquants' },
         { status: 400 }
       );
     }
@@ -125,18 +95,15 @@ export async function POST(req: NextRequest) {
     const media = formData.get('media') as File | null;
     let mediaUrl: string | null = null;
 
-    if (media) {
+    if (media && media.size > 0) {
       const buffer = await media.arrayBuffer();
-      const filename = `${user.id}/${Date.now()}_${media.name}`;
+      const filename = `${session.user.id}/${Date.now()}_${media.name}`;
 
       const { error: uploadError } = await supabase.storage
         .from('posts')
         .upload(filename, new Uint8Array(buffer));
 
-      if (uploadError) {
-        console.error('Upload error:', uploadError);
-        // Continue without media URL for now
-      } else {
+      if (!uploadError) {
         const { data: { publicUrl } } = supabase.storage
           .from('posts')
           .getPublicUrl(filename);
@@ -144,21 +111,20 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Create post
     const postId = uuidv4();
     const { data: post, error } = await supabase
       .from('posts')
       .insert({
         id: postId,
-        user_id: user.id,
+        user_id: session.user.id,
         title: title || null,
         caption,
         platforms,
         scheduled_date: scheduledDate,
         scheduled_time: scheduledTime,
-        status,
+        status: postStatus,
         media_url: mediaUrl,
-        media_type: mediaType,
+        media_type: mediaType || null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -168,7 +134,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json(
-        { success: false, error: 'Failed to create post' },
+        { success: false, error: 'Erreur lors de la creation du post' },
         { status: 500 }
       );
     }
@@ -180,7 +146,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Erreur serveur' },
       { status: 500 }
     );
   }

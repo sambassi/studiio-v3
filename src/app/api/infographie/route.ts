@@ -1,34 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth/config';
+import { auth } from '@/lib/auth/config';
 import { v4 as uuidv4 } from 'uuid';
 
 const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.email) {
+    const session = await auth();
+    if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: 'Unauthorized' },
+        { success: false, error: 'Non autorise' },
         { status: 401 }
       );
     }
 
-    // Get user
+    // Get user credits
     const { data: user } = await supabase
       .from('users')
       .select('id, credits')
-      .eq('email', session.user.email)
+      .eq('id', session.user.id)
       .single();
 
     if (!user) {
       return NextResponse.json(
-        { success: false, error: 'User not found' },
+        { success: false, error: 'Utilisateur non trouve' },
         { status: 404 }
       );
     }
@@ -37,21 +36,14 @@ export async function POST(req: NextRequest) {
     const title = formData.get('title') as string;
     const subtitle = formData.get('subtitle') as string;
     const theme = formData.get('theme') as string;
-    const cards = JSON.parse(formData.get('cards') as string);
+    const cards = JSON.parse(formData.get('cards') as string || '[]');
     const duration = parseInt(formData.get('duration') as string) || 30;
     const batch = formData.get('batch') === 'true';
 
-    // Handle media files
-    let characterUrl: string | null = null;
-    let musicUrl: string | null = null;
-    let logoUrl: string | null = null;
-    let voixOffUrl: string | null = null;
-    let mixVideoUrl: string | null = null;
-
     const uploadFile = async (file: File | null, folder: string) => {
-      if (!file) return null;
+      if (!file || file.size === 0) return null;
       const buffer = await file.arrayBuffer();
-      const filename = `${user.id}/${folder}/${Date.now()}_${file.name}`;
+      const filename = `${session.user!.id}/${folder}/${Date.now()}_${file.name}`;
 
       const { error: uploadError } = await supabase.storage
         .from('infographie-media')
@@ -69,37 +61,29 @@ export async function POST(req: NextRequest) {
       return publicUrl;
     };
 
-    const character = formData.get('character') as File | null;
-    const mixVideo = formData.get('mixVideo') as File | null;
-    const musicFile = formData.get('music') as File | null;
-    const voixOffFile = formData.get('voixOff') as File | null;
-    const logoFile = formData.get('logo') as File | null;
-
-    [characterUrl, musicUrl, logoUrl, voixOffUrl, mixVideoUrl] = await Promise.all([
-      uploadFile(character, 'characters'),
-      uploadFile(musicFile, 'music'),
-      uploadFile(logoFile, 'logos'),
-      uploadFile(voixOffFile, 'voix-off'),
-      uploadFile(mixVideo, 'mix-videos'),
+    const [characterUrl, musicUrl, logoUrl, voixOffUrl, mixVideoUrl] = await Promise.all([
+      uploadFile(formData.get('character') as File | null, 'characters'),
+      uploadFile(formData.get('music') as File | null, 'music'),
+      uploadFile(formData.get('logo') as File | null, 'logos'),
+      uploadFile(formData.get('voixOff') as File | null, 'voix-off'),
+      uploadFile(formData.get('mixVideo') as File | null, 'mix-videos'),
     ]);
 
-    // Calculate credits needed (basic cost for now)
     const creditsNeeded = batch ? 50 : 25;
 
     if (user.credits < creditsNeeded) {
       return NextResponse.json(
-        { success: false, error: 'Insufficient credits' },
+        { success: false, error: 'Credits insuffisants' },
         { status: 402 }
       );
     }
 
-    // Create info video record
     const videoId = uuidv4();
     const { data: infoVideo, error } = await supabase
       .from('info_videos')
       .insert({
         id: videoId,
-        user_id: user.id,
+        user_id: session.user.id,
         title,
         subtitle,
         theme,
@@ -111,10 +95,7 @@ export async function POST(req: NextRequest) {
         mix_video_url: mixVideoUrl,
         duration,
         status: 'rendering',
-        metadata: {
-          batch,
-          created_at: new Date().toISOString(),
-        },
+        metadata: { batch, created_at: new Date().toISOString() },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       })
@@ -124,7 +105,7 @@ export async function POST(req: NextRequest) {
     if (error) {
       console.error('Supabase error:', error);
       return NextResponse.json(
-        { success: false, error: 'Failed to create video' },
+        { success: false, error: 'Erreur lors de la creation' },
         { status: 500 }
       );
     }
@@ -132,36 +113,27 @@ export async function POST(req: NextRequest) {
     // Deduct credits
     await supabase
       .from('users')
-      .update({
-        credits: user.credits - creditsNeeded,
-        updated_at: new Date().toISOString(),
-      })
+      .update({ credits: user.credits - creditsNeeded, updated_at: new Date().toISOString() })
       .eq('id', user.id);
 
-    // Log credit transaction
-    await supabase
-      .from('credit_transactions')
-      .insert({
-        id: uuidv4(),
-        user_id: user.id,
-        amount: -creditsNeeded,
-        type: 'render',
-        reference_id: videoId,
-        created_at: new Date().toISOString(),
-      });
-
-    // TODO: Queue render job to external service (FFmpeg, etc.)
-    // For now, just return the created video
+    await supabase.from('credit_transactions').insert({
+      id: uuidv4(),
+      user_id: user.id,
+      amount: -creditsNeeded,
+      type: 'render',
+      reference_id: videoId,
+      created_at: new Date().toISOString(),
+    });
 
     return NextResponse.json({
       success: true,
       data: infoVideo,
-      message: 'Vidéo mise en file d\'attente pour rendu',
+      message: 'Video mise en file d\'attente pour rendu',
     });
   } catch (error) {
     console.error('Error:', error);
     return NextResponse.json(
-      { success: false, error: 'Internal server error' },
+      { success: false, error: 'Erreur serveur' },
       { status: 500 }
     );
   }
